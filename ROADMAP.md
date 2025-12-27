@@ -34,8 +34,8 @@
 - [x] Wire all components into the Celery task
 
 ### 1.8 End-to-end test
-- [ ] Test script to manually ingest a Gutenberg text
-- [ ] Verify data in DuckDB
+- [x] Test script to manually ingest a Gutenberg text
+- [x] Verify data in DuckDB
 
 ## Phase 2: Go API
 
