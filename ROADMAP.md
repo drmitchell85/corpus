@@ -13,8 +13,8 @@
 - [x] Create indexes on year and genre
 
 ### 1.3 Celery + Redis configuration
-- [ ] `workers/celery_config.py` — Celery app config with Redis broker
-- [ ] Basic `workers/worker.py` skeleton with task decorator
+- [x] `workers/celery_config.py` — Celery app config with Redis broker
+- [x] Basic `workers/worker.py` skeleton with task decorator
 
 ### 1.4 Gutenberg fetcher + boilerplate stripper
 - [ ] Function to fetch text from Gutenberg URL
