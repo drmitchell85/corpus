@@ -1,0 +1,21 @@
+# Database
+corpus.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+*.egg-info/
+
+# Uploads
+uploads/
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/

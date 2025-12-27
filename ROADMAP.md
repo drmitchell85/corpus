@@ -3,14 +3,14 @@
 ## Phase 1: Core Pipeline
 
 ### 1.1 Project foundation
-- [ ] `requirements.txt` (celery, redis, sentence-transformers, duckdb, requests)
-- [ ] `.gitignore` (corpus.db, __pycache__, uploads/, .env, venv/)
-- [ ] Create `workers/` directory structure
+- [x] `requirements.txt` (celery, redis, sentence-transformers, duckdb, requests)
+- [x] `.gitignore` (corpus.db, __pycache__, uploads/, .env, venv/)
+- [x] Create `workers/` directory structure
 
 ### 1.2 DuckDB schema setup
-- [ ] Schema initialization script/function
-- [ ] Create `texts` table with embedding column (FLOAT4[384])
-- [ ] Create indexes on year and genre
+- [x] Schema initialization script/function
+- [x] Create `texts` table with embedding column (FLOAT4[384])
+- [x] Create indexes on year and genre
 
 ### 1.3 Celery + Redis configuration
 - [ ] `workers/celery_config.py` — Celery app config with Redis broker

@@ -201,3 +201,27 @@ To move to the web:
 - Deploy React build as static assets
 
 No code changes needed. Just point everything at remote Redis and DuckDB.
+
+ ## Typical Workflow
+
+When working on a new feature phase:
+
+1. **Check ROADMAP.md** - Identify the current chunk and its requirements
+2. **Backend first** - Create/update service, controller, routes, Swagger docs
+3. **Frontend second** - Create/update types, API client, components, pages
+4. **Update documentation:**
+    - Mark completed items in `ROADMAP.md`
+    - Update Swagger JSDoc if API changed
+    - Update Postman collection if endpoints added/changed
+5. **Provide commit message** when requested
+
+**Commit Message Format:**
+```
+feat: brief description
+
+- Backend changes
+- Frontend changes
+- Documentation updates
+
+[Claude Code]
+```
