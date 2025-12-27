@@ -50,9 +50,10 @@ def init_schema() -> None:
     Safe to call multiple times (uses IF NOT EXISTS).
     """
     with get_connection() as conn:
+        conn.execute("CREATE SEQUENCE IF NOT EXISTS texts_id_seq START 1")
         conn.execute("""
             CREATE TABLE IF NOT EXISTS texts (
-                id INTEGER PRIMARY KEY,
+                id INTEGER PRIMARY KEY DEFAULT nextval('texts_id_seq'),
                 source_url VARCHAR,
                 text VARCHAR,
                 embedding FLOAT4[384],
@@ -125,15 +126,19 @@ def insert_chunk(
         True if chunk was inserted, False if it was a duplicate
     """
     text_hash = generate_hash(text)
-    result = conn.execute(
+
+    # Check for duplicate before inserting (DuckDB rowcount is unreliable)
+    if hash_exists(conn, text_hash):
+        return False
+
+    conn.execute(
         """
         INSERT INTO texts (source_url, text, embedding, author, title, year, genre, hash)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT (hash) DO NOTHING
         """,
         [source_url, text, embedding.tolist(), author, title, year, genre, text_hash]
     )
-    return result.rowcount > 0
+    return True
 
 
 def store_chunks(
