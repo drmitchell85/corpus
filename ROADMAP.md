@@ -39,9 +39,9 @@
 - [x] Return status, progress, and result details
 
 ### 2.5 GET `/texts`
-- [ ] List all ingested texts from DuckDB
-- [ ] Include metadata (author, title, year, genre)
-- [ ] Basic pagination
+- [x] List all ingested texts from DuckDB
+- [x] Include metadata (author, title, year, genre)
+- [x] Basic pagination
 
 ### 2.6 GET `/search`
 - [ ] Accept query string parameter

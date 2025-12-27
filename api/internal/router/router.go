@@ -21,6 +21,7 @@ func New() *chi.Mux {
 	r.Get("/health", handleHealth)
 	r.Post("/ingest", handler.Ingest)
 	r.Get("/ingest/status/{id}", handler.IngestStatus)
+	r.Get("/texts", handler.ListTexts)
 
 	return r
 }

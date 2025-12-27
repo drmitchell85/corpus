@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"corpus/api/internal/config"
+	"corpus/api/internal/models"
 
 	_ "github.com/marcboeker/go-duckdb"
 )
@@ -62,4 +63,53 @@ func HashExists(ctx context.Context, hash string) (bool, error) {
 		return false, err
 	}
 	return exists, nil
+}
+
+// ListTexts returns paginated texts grouped by source_url.
+func ListTexts(ctx context.Context, page, perPage int) ([]models.TextRow, int, error) {
+	offset := (page - 1) * perPage
+
+	// Get total count of distinct source_urls
+	var total int
+	err := DB().QueryRowContext(ctx,
+		"SELECT COUNT(DISTINCT source_url) FROM texts",
+	).Scan(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Get paginated results grouped by source_url
+	rows, err := DB().QueryContext(ctx, `
+		SELECT
+			MIN(id) as id,
+			source_url,
+			MAX(author) as author,
+			MAX(title) as title,
+			MAX(year) as year,
+			MAX(genre) as genre,
+			COUNT(*) as chunk_count
+		FROM texts
+		GROUP BY source_url
+		ORDER BY MIN(id) DESC
+		LIMIT ? OFFSET ?
+	`, perPage, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var texts []models.TextRow
+	for rows.Next() {
+		var t models.TextRow
+		if err := rows.Scan(&t.ID, &t.SourceURL, &t.Author, &t.Title, &t.Year, &t.Genre, &t.ChunkCount); err != nil {
+			return nil, 0, err
+		}
+		texts = append(texts, t)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+
+	return texts, total, nil
 }
