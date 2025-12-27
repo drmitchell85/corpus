@@ -17,8 +17,8 @@
 - [x] Basic `workers/worker.py` skeleton with task decorator
 
 ### 1.4 Gutenberg fetcher + boilerplate stripper
-- [ ] Function to fetch text from Gutenberg URL
-- [ ] Function to strip Gutenberg header/footer markers
+- [x] Function to fetch text from Gutenberg URL
+- [x] Function to strip Gutenberg header/footer markers
 
 ### 1.5 Text chunker
 - [ ] Function to split text into chunks (100-2000 chars)
