@@ -4,6 +4,25 @@
 
 Build a full-stack application with asynchronous text ingestion. Users submit text sources via API, the system checks if the text exists in the DB, queues processing if new, and workers asynchronously fetch, chunk, embed, and store. Frontend queries the corpus. Scalable to web deployment.
 
+## Code Philosophy
+
+**Pragmatic Functional Programming** — not strict, but guided by FP principles:
+
+- **Small, focused functions**: Each function does one thing well. If a function is hard to name or explain in one sentence, it's doing too much.
+- **Composability over inheritance**: Build complex behavior by composing simple functions, not through deep class hierarchies.
+- **Pure functions where practical**: Prefer functions that take inputs and return outputs without side effects. Isolate side effects (DB, network, file I/O) at the edges.
+- **Immutability by default**: Don't mutate data; create new values instead. This makes code easier to reason about.
+- **Explicit over implicit**: Pass dependencies as arguments rather than relying on global state. Makes testing and understanding easier.
+
+**Practical guidelines:**
+
+- Functions should generally be 10-25 lines. If longer, look for extraction opportunities.
+- Avoid deeply nested conditionals — extract helper functions or use early returns.
+- Name functions as verbs describing their action: `fetchText`, `chunkParagraphs`, `embedChunks`.
+- Keep `main()` functions minimal — they wire things together but don't contain logic.
+
+This applies to both Python workers and Go API code. The goal is readable, testable, maintainable code — not FP purity.
+
 ## Input Sources
 
 Two primary input methods:
@@ -223,5 +242,7 @@ feat: brief description
 - Frontend changes
 - Documentation updates
 
-[Claude Code]
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 ```
