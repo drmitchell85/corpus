@@ -21,8 +21,8 @@
 - [x] Function to strip Gutenberg header/footer markers
 
 ### 1.5 Text chunker
-- [ ] Function to split text into chunks (100-2000 chars)
-- [ ] Paragraph-aware splitting logic
+- [x] Function to split text into chunks (100-2000 chars)
+- [x] Paragraph-aware splitting logic
 
 ### 1.6 Embedding with sentence-transformers
 - [ ] Load `all-MiniLM-L6-v2` model
