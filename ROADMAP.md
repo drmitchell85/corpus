@@ -3,39 +3,39 @@
 ## Phase 1: Core Pipeline
 
 ### 1.1 Project foundation
-- [ ] `requirements.txt` (celery, redis, sentence-transformers, duckdb, requests)
-- [ ] `.gitignore` (corpus.db, __pycache__, uploads/, .env, venv/)
-- [ ] Create `workers/` directory structure
+- [x] `requirements.txt` (celery, redis, sentence-transformers, duckdb, requests)
+- [x] `.gitignore` (corpus.db, __pycache__, uploads/, .env, venv/)
+- [x] Create `workers/` directory structure
 
 ### 1.2 DuckDB schema setup
-- [ ] Schema initialization script/function
-- [ ] Create `texts` table with embedding column (FLOAT4[384])
-- [ ] Create indexes on year and genre
+- [x] Schema initialization script/function
+- [x] Create `texts` table with embedding column (FLOAT4[384])
+- [x] Create indexes on year and genre
 
 ### 1.3 Celery + Redis configuration
-- [ ] `workers/celery_config.py` — Celery app config with Redis broker
-- [ ] Basic `workers/worker.py` skeleton with task decorator
+- [x] `workers/celery_config.py` — Celery app config with Redis broker
+- [x] Basic `workers/worker.py` skeleton with task decorator
 
 ### 1.4 Gutenberg fetcher + boilerplate stripper
-- [ ] Function to fetch text from Gutenberg URL
-- [ ] Function to strip Gutenberg header/footer markers
+- [x] Function to fetch text from Gutenberg URL
+- [x] Function to strip Gutenberg header/footer markers
 
 ### 1.5 Text chunker
-- [ ] Function to split text into chunks (100-2000 chars)
-- [ ] Paragraph-aware splitting logic
+- [x] Function to split text into chunks (100-2000 chars)
+- [x] Paragraph-aware splitting logic
 
 ### 1.6 Embedding with sentence-transformers
-- [ ] Load `all-MiniLM-L6-v2` model
-- [ ] Function to embed text chunks → 384-dim vectors
+- [x] Load `all-MiniLM-L6-v2` model
+- [x] Function to embed text chunks → 384-dim vectors
 
 ### 1.7 DuckDB storage + task wiring
-- [ ] Function to store chunks + embeddings in DuckDB
-- [ ] Hash generation for duplicate detection
-- [ ] Wire all components into the Celery task
+- [x] Function to store chunks + embeddings in DuckDB
+- [x] Hash generation for duplicate detection
+- [x] Wire all components into the Celery task
 
 ### 1.8 End-to-end test
-- [ ] Test script to manually ingest a Gutenberg text
-- [ ] Verify data in DuckDB
+- [x] Test script to manually ingest a Gutenberg text
+- [x] Verify data in DuckDB
 
 ## Phase 2: Go API
 
