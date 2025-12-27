@@ -29,9 +29,9 @@
 - [x] Function to embed text chunks → 384-dim vectors
 
 ### 1.7 DuckDB storage + task wiring
-- [ ] Function to store chunks + embeddings in DuckDB
-- [ ] Hash generation for duplicate detection
-- [ ] Wire all components into the Celery task
+- [x] Function to store chunks + embeddings in DuckDB
+- [x] Hash generation for duplicate detection
+- [x] Wire all components into the Celery task
 
 ### 1.8 End-to-end test
 - [ ] Test script to manually ingest a Gutenberg text
