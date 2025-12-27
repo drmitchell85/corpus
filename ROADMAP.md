@@ -24,9 +24,9 @@
 - [x] Basic server skeleton with health check endpoint
 
 ### 2.2 Redis/Celery integration
-- [ ] Connect to Redis broker
-- [ ] Helper function to queue Celery tasks from Go
-- [ ] Job ID generation
+- [x] Connect to Redis broker
+- [x] Helper function to queue Celery tasks from Go
+- [x] Job ID generation
 
 ### 2.3 POST `/ingest`
 - [ ] Accept Gutenberg URL + metadata JSON
