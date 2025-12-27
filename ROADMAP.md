@@ -35,8 +35,8 @@
 - [x] Return job ID
 
 ### 2.4 GET `/ingest/status/:id`
-- [ ] Look up job status from Celery result backend
-- [ ] Return status, progress, and result details
+- [x] Look up job status from Celery result backend
+- [x] Return status, progress, and result details
 
 ### 2.5 GET `/texts`
 - [ ] List all ingested texts from DuckDB

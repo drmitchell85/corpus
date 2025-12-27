@@ -28,3 +28,10 @@ type IngestResponse struct {
 	Status  string `json:"status"`
 	Message string `json:"message,omitempty"`
 }
+
+// StatusResponse is the JSON response for GET /ingest/status/:id.
+type StatusResponse struct {
+	JobID  string         `json:"job_id"`
+	Status string         `json:"status"`
+	Result map[string]any `json:"result,omitempty"`
+}
