@@ -20,7 +20,7 @@ worker: install
 	$(VENV)/bin/celery -A workers.worker worker --loglevel=info
 
 api:
-	cd api && go build -o corpus-api . && ./corpus-api
+	cd api && go build -o corpus-api ./cmd && ./corpus-api
 
 clean:
 	rm -f corpus.db api/corpus-api

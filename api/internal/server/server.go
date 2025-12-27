@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"context"
@@ -8,22 +8,24 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"corpus/api/internal/router"
 )
 
-var server *http.Server
+var srv *http.Server
 
 func Start() {
-	server = &http.Server{
+	srv = &http.Server{
 		Addr:         ":8080",
-		Handler:      NewRouter(),
+		Handler:      router.New(),
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 30 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
 
 	go func() {
-		log.Printf("Server starting on %s", server.Addr)
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Printf("Server starting on %s", srv.Addr)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Server error: %v", err)
 		}
 	}()
@@ -34,7 +36,7 @@ func Stop() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	if err := server.Shutdown(ctx); err != nil {
+	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatalf("Server shutdown error: %v", err)
 	}
 	log.Println("Server stopped")
