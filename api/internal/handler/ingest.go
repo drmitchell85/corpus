@@ -14,48 +14,33 @@ import (
 func Ingest(w http.ResponseWriter, r *http.Request) {
 	req, err := parseIngestRequest(r)
 	if err != nil {
-		respondJSON(w, http.StatusBadRequest, models.IngestResponse{
-			Status:  "error",
-			Message: err.Error(),
-		})
+		respondFailure(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if err := validateIngestRequest(req); err != nil {
-		respondJSON(w, http.StatusBadRequest, models.IngestResponse{
-			Status:  "error",
-			Message: err.Error(),
-		})
+		respondFailure(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	exists, err := db.SourceExists(r.Context(), req.SourceURL)
 	if err != nil {
-		respondJSON(w, http.StatusInternalServerError, models.IngestResponse{
-			Status:  "error",
-			Message: "database error",
-		})
+		respondFailure(w, http.StatusInternalServerError, "database error")
 		return
 	}
 
 	if exists {
-		respondJSON(w, http.StatusConflict, models.IngestResponse{
-			Status:  "duplicate",
-			Message: "source URL already ingested",
-		})
+		respondFailure(w, http.StatusConflict, "source URL already ingested")
 		return
 	}
 
 	result, err := queueIngestJob(r.Context(), req)
 	if err != nil {
-		respondJSON(w, http.StatusInternalServerError, models.IngestResponse{
-			Status:  "error",
-			Message: "failed to queue job",
-		})
+		respondFailure(w, http.StatusInternalServerError, "failed to queue job")
 		return
 	}
 
-	respondJSON(w, http.StatusAccepted, models.IngestResponse{
+	respondSuccess(w, http.StatusAccepted, models.IngestResponse{
 		JobID:   result.JobID,
 		Status:  "queued",
 		Message: "job queued for processing",
@@ -92,13 +77,6 @@ func queueIngestJob(ctx context.Context, req *models.IngestRequest) (*celery.Que
 	}
 
 	return celery.QueueTextJob(ctx, "gutenberg", req.SourceURL, metadata)
-}
-
-// respondJSON writes a JSON response.
-func respondJSON(w http.ResponseWriter, status int, data any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
 }
 
 // validationError is a simple error type for validation failures.
