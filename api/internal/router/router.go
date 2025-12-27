@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"time"
 
+	"corpus/api/internal/handler"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
@@ -17,6 +19,7 @@ func New() *chi.Mux {
 	r.Use(middleware.Timeout(30 * time.Second))
 
 	r.Get("/health", handleHealth)
+	r.Post("/ingest", handler.Ingest)
 
 	return r
 }

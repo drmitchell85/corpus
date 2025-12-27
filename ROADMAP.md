@@ -29,10 +29,10 @@
 - [x] Job ID generation
 
 ### 2.3 POST `/ingest`
-- [ ] Accept Gutenberg URL + metadata JSON
-- [ ] Duplicate detection (hash check before queueing)
-- [ ] Queue job to Celery worker
-- [ ] Return job ID
+- [x] Accept Gutenberg URL + metadata JSON
+- [x] Duplicate detection (hash check before queueing)
+- [x] Queue job to Celery worker
+- [x] Return job ID
 
 ### 2.4 GET `/ingest/status/:id`
 - [ ] Look up job status from Celery result backend

@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"corpus/api/internal/models"
 	"corpus/api/internal/redis"
 
 	"github.com/google/uuid"
@@ -21,21 +22,13 @@ const (
 	TaskName = "workers.worker.process_text"
 )
 
-// TaskMetadata holds optional text metadata.
-type TaskMetadata struct {
-	Author string `json:"author,omitempty"`
-	Title  string `json:"title,omitempty"`
-	Year   int    `json:"year,omitempty"`
-	Genre  string `json:"genre,omitempty"`
-}
-
 // QueueResult contains the result of queueing a task.
 type QueueResult struct {
 	JobID string
 }
 
 // QueueTextJob queues a text processing job for Celery workers.
-func QueueTextJob(ctx context.Context, sourceType, sourceURL string, metadata *TaskMetadata) (*QueueResult, error) {
+func QueueTextJob(ctx context.Context, sourceType, sourceURL string, metadata *models.TaskMetadata) (*QueueResult, error) {
 	jobID := generateJobID()
 
 	msg, err := buildMessage(jobID, sourceType, sourceURL, metadata)
@@ -56,7 +49,7 @@ func generateJobID() string {
 }
 
 // buildMessage constructs a Celery-compatible message.
-func buildMessage(jobID, sourceType, sourceURL string, metadata *TaskMetadata) ([]byte, error) {
+func buildMessage(jobID, sourceType, sourceURL string, metadata *models.TaskMetadata) ([]byte, error) {
 	body := buildBody(jobID, sourceType, sourceURL, metadata)
 	headers := buildHeaders(jobID)
 	properties := buildProperties(jobID)
@@ -79,7 +72,7 @@ func buildMessage(jobID, sourceType, sourceURL string, metadata *TaskMetadata) (
 }
 
 // buildBody creates the Celery message body: [args, kwargs, embed].
-func buildBody(jobID, sourceType, sourceURL string, metadata *TaskMetadata) []any {
+func buildBody(jobID, sourceType, sourceURL string, metadata *models.TaskMetadata) []any {
 	kwargs := map[string]any{
 		"job_id":      jobID,
 		"source_type": sourceType,
@@ -92,9 +85,9 @@ func buildBody(jobID, sourceType, sourceURL string, metadata *TaskMetadata) []an
 
 	// Celery body format: [positional_args, keyword_args, embed_options]
 	return []any{
-		[]any{},           // args (empty, we use kwargs)
-		kwargs,            // kwargs
-		map[string]any{},  // embed options
+		[]any{},          // args (empty, we use kwargs)
+		kwargs,           // kwargs
+		map[string]any{}, // embed options
 	}
 }
 
