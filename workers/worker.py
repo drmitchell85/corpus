@@ -62,7 +62,7 @@ def process_text(self, job_id: str, source_type: str, source_url: str = None,
         embeddings = embed_chunks(chunks)
 
         # Step 4: Store in DuckDB
-        stored_count = store_chunks(
+        result = store_chunks(
             chunks=chunks,
             embeddings=embeddings,
             source_url=source_url or pdf_path,
@@ -77,7 +77,8 @@ def process_text(self, job_id: str, source_type: str, source_url: str = None,
             "status": "completed",
             "source_type": source_type,
             "chunks_processed": len(chunks),
-            "chunks_stored": stored_count,
+            "chunks_stored": result.stored,
+            "chunks_skipped": result.skipped,
         }
 
     except NotImplementedError:

@@ -84,7 +84,7 @@ def run_test(url: str = DEFAULT_URL) -> bool:
 
     # Step 4: Store
     print("[5/6] Storing in DuckDB...")
-    stored_count = store_chunks(
+    result = store_chunks(
         chunks=chunks,
         embeddings=embeddings,
         source_url=url,
@@ -93,47 +93,44 @@ def run_test(url: str = DEFAULT_URL) -> bool:
         year=TEST_METADATA["year"],
         genre=TEST_METADATA["genre"],
     )
-    print(f"      ✓ Stored {stored_count} chunks (duplicates skipped: {len(chunks) - stored_count})")
+    print(f"      ✓ Stored {result.stored} chunks (duplicates skipped: {result.skipped})")
     print()
 
     # Step 5: Verify
     print("[6/6] Verifying data in DuckDB...")
-    conn = get_connection()
+    with get_connection() as conn:
+        # Count total rows
+        total = conn.execute("SELECT COUNT(*) FROM texts").fetchone()[0]
+        print(f"      Total rows in database: {total}")
 
-    # Count total rows
-    total = conn.execute("SELECT COUNT(*) FROM texts").fetchone()[0]
-    print(f"      Total rows in database: {total}")
+        # Count rows from this source
+        source_count = conn.execute(
+            "SELECT COUNT(*) FROM texts WHERE source_url = ?",
+            [url]
+        ).fetchone()[0]
+        print(f"      Rows from this source: {source_count}")
 
-    # Count rows from this source
-    source_count = conn.execute(
-        "SELECT COUNT(*) FROM texts WHERE source_url = ?",
-        [url]
-    ).fetchone()[0]
-    print(f"      Rows from this source: {source_count}")
+        # Sample a row
+        sample = conn.execute(
+            """
+            SELECT id, author, title, year, genre, LENGTH(text) as text_len,
+                   LENGTH(embedding::VARCHAR) as emb_len
+            FROM texts
+            WHERE source_url = ?
+            LIMIT 1
+            """,
+            [url]
+        ).fetchone()
 
-    # Sample a row
-    sample = conn.execute(
-        """
-        SELECT id, author, title, year, genre, LENGTH(text) as text_len,
-               LENGTH(embedding::VARCHAR) as emb_len
-        FROM texts
-        WHERE source_url = ?
-        LIMIT 1
-        """,
-        [url]
-    ).fetchone()
-
-    if sample:
-        print(f"      Sample row:")
-        print(f"        - ID: {sample[0]}")
-        print(f"        - Author: {sample[1]}")
-        print(f"        - Title: {sample[2]}")
-        print(f"        - Year: {sample[3]}")
-        print(f"        - Genre: {sample[4]}")
-        print(f"        - Text length: {sample[5]} chars")
-        print(f"        - Embedding stored: {'Yes' if sample[6] > 0 else 'No'}")
-
-    conn.close()
+        if sample:
+            print(f"      Sample row:")
+            print(f"        - ID: {sample[0]}")
+            print(f"        - Author: {sample[1]}")
+            print(f"        - Title: {sample[2]}")
+            print(f"        - Year: {sample[3]}")
+            print(f"        - Genre: {sample[4]}")
+            print(f"        - Text length: {sample[5]} chars")
+            print(f"        - Embedding stored: {'Yes' if sample[6] > 0 else 'No'}")
     print()
 
     # Summary
