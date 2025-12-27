@@ -25,8 +25,8 @@
 - [x] Paragraph-aware splitting logic
 
 ### 1.6 Embedding with sentence-transformers
-- [ ] Load `all-MiniLM-L6-v2` model
-- [ ] Function to embed text chunks → 384-dim vectors
+- [x] Load `all-MiniLM-L6-v2` model
+- [x] Function to embed text chunks → 384-dim vectors
 
 ### 1.7 DuckDB storage + task wiring
 - [ ] Function to store chunks + embeddings in DuckDB
