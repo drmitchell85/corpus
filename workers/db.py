@@ -1,15 +1,20 @@
 """DuckDB schema and database utilities."""
 
 import hashlib
+import os
 from contextlib import contextmanager
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Generator
 
 import duckdb
 import numpy as np
-from pathlib import Path
+from dotenv import load_dotenv
 
-DB_PATH = Path(__file__).parent.parent / "corpus.db"
+# Load .env from project root
+load_dotenv(Path(__file__).parent.parent / ".env")
+
+DB_PATH = Path(os.getenv("DATABASE_PATH", "./corpus.db"))
 
 
 class DatabaseError(Exception):

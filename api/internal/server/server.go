@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"corpus/api/internal/config"
 	"corpus/api/internal/router"
 )
 
@@ -16,7 +17,7 @@ var srv *http.Server
 
 func Start() {
 	srv = &http.Server{
-		Addr:         ":8080",
+		Addr:         ":" + config.APIPort,
 		Handler:      router.New(),
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 30 * time.Second,
