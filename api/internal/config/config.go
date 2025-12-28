@@ -7,9 +7,10 @@ import (
 )
 
 var (
-	APIPort  string
-	RedisURL string
-	DBPath   string
+	APIPort         string
+	RedisURL        string
+	DBPath          string
+	EmbedServiceURL string
 )
 
 func Load() {
@@ -21,6 +22,7 @@ func Load() {
 	APIPort = getEnv("API_PORT", "8080")
 	RedisURL = getEnv("REDIS_URL", "redis://localhost:6379/0")
 	DBPath = getEnv("DATABASE_PATH", "./corpus.db")
+	EmbedServiceURL = getEnv("EMBED_SERVICE_URL", "http://localhost:8001")
 }
 
 func getEnv(key, fallback string) string {

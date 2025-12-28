@@ -37,6 +37,18 @@ type TextRow struct {
 	ChunkCount int
 }
 
+// SearchRow represents a row from the vector similarity search query.
+type SearchRow struct {
+	ID        int
+	Text      string
+	Score     float64
+	SourceURL string
+	Author    sql.NullString
+	Title     sql.NullString
+	Year      sql.NullInt32
+	Genre     sql.NullString
+}
+
 // ============================================================================
 // API Request Types
 // ============================================================================
@@ -83,4 +95,23 @@ type TextListResponse struct {
 	Page       int        `json:"page"`
 	PerPage    int        `json:"per_page"`
 	TotalPages int        `json:"total_pages"`
+}
+
+// SearchResult represents a single search hit.
+type SearchResult struct {
+	ID        int     `json:"id"`
+	Text      string  `json:"text"`
+	Score     float64 `json:"score"`
+	SourceURL string  `json:"source_url"`
+	Author    string  `json:"author,omitempty"`
+	Title     string  `json:"title,omitempty"`
+	Year      int     `json:"year,omitempty"`
+	Genre     string  `json:"genre,omitempty"`
+}
+
+// SearchResponse is the JSON response for GET /search.
+type SearchResponse struct {
+	Query   string         `json:"query"`
+	Results []SearchResult `json:"results"`
+	Total   int            `json:"total"`
 }

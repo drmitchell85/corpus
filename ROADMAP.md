@@ -44,10 +44,10 @@
 - [x] Basic pagination
 
 ### 2.6 GET `/search`
-- [ ] Accept query string parameter
-- [ ] Embed query with sentence-transformers (or call Python)
-- [ ] Vector similarity search in DuckDB
-- [ ] Return ranked results with metadata
+- [x] Accept query string parameter
+- [x] Embed query with sentence-transformers (or call Python)
+- [x] Vector similarity search in DuckDB
+- [x] Return ranked results with metadata
 
 ## Phase 3: PDF Support
 

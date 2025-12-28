@@ -3,6 +3,8 @@ package db
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"strings"
 	"sync"
 
 	"corpus/api/internal/config"
@@ -112,4 +114,55 @@ func ListTexts(ctx context.Context, page, perPage int) ([]models.TextRow, int, e
 	}
 
 	return texts, total, nil
+}
+
+// SearchTexts performs vector similarity search using the query embedding.
+func SearchTexts(ctx context.Context, embedding []float32, limit int) ([]models.SearchRow, error) {
+	// Build the embedding array literal for DuckDB
+	embeddingLiteral := floatsToArrayLiteral(embedding)
+
+	query := fmt.Sprintf(`
+		SELECT
+			id,
+			text,
+			list_cosine_similarity(embedding, %s) as score,
+			source_url,
+			author,
+			title,
+			year,
+			genre
+		FROM texts
+		ORDER BY score DESC
+		LIMIT ?
+	`, embeddingLiteral)
+
+	rows, err := DB().QueryContext(ctx, query, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []models.SearchRow
+	for rows.Next() {
+		var r models.SearchRow
+		if err := rows.Scan(&r.ID, &r.Text, &r.Score, &r.SourceURL, &r.Author, &r.Title, &r.Year, &r.Genre); err != nil {
+			return nil, err
+		}
+		results = append(results, r)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return results, nil
+}
+
+// floatsToArrayLiteral converts a float32 slice to a DuckDB array literal.
+func floatsToArrayLiteral(floats []float32) string {
+	strs := make([]string, len(floats))
+	for i, f := range floats {
+		strs[i] = fmt.Sprintf("%g", f)
+	}
+	return "[" + strings.Join(strs, ",") + "]"
 }
