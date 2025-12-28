@@ -25,10 +25,10 @@
 - [x] Update worker to handle `source_type: pdf`
 - [x] File path handling for uploaded PDFs
 
-### 3.3 Upload endpoint
-- [ ] POST `/upload` — accept PDF + metadata
-- [ ] Save file to uploads/ directory
-- [ ] Queue PDF job to worker
+### 3.3 Upload endpoint ✓
+- [x] POST `/upload` — accept PDF + metadata
+- [x] Save file to uploads/ directory
+- [x] Queue PDF job to worker
 
 ### 3.4 Testing
 - [ ] Test with sample PDFs

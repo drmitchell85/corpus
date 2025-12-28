@@ -70,6 +70,14 @@ type IngestResponse struct {
 	Message string `json:"message,omitempty"`
 }
 
+// UploadResponse is the JSON response for POST /upload.
+type UploadResponse struct {
+	JobID    string `json:"job_id,omitempty"`
+	Status   string `json:"status"`
+	Message  string `json:"message,omitempty"`
+	Filename string `json:"filename,omitempty"`
+}
+
 // StatusResponse is the JSON response for GET /ingest/status/:id.
 type StatusResponse struct {
 	JobID  string         `json:"job_id"`

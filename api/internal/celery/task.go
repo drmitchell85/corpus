@@ -29,9 +29,19 @@ type QueueResult struct {
 
 // QueueTextJob queues a text processing job for Celery workers.
 func QueueTextJob(ctx context.Context, sourceType, sourceURL string, metadata *models.TaskMetadata) (*QueueResult, error) {
+	return QueueJob(ctx, sourceType, sourceURL, "", metadata)
+}
+
+// QueuePDFJob queues a PDF processing job for Celery workers.
+func QueuePDFJob(ctx context.Context, pdfPath string, metadata *models.TaskMetadata) (*QueueResult, error) {
+	return QueueJob(ctx, "pdf", "", pdfPath, metadata)
+}
+
+// QueueJob queues a text processing job for Celery workers.
+func QueueJob(ctx context.Context, sourceType, sourceURL, pdfPath string, metadata *models.TaskMetadata) (*QueueResult, error) {
 	jobID := generateJobID()
 
-	msg, err := buildMessage(jobID, sourceType, sourceURL, metadata)
+	msg, err := buildMessage(jobID, sourceType, sourceURL, pdfPath, metadata)
 	if err != nil {
 		return nil, fmt.Errorf("build message: %w", err)
 	}
@@ -49,8 +59,8 @@ func generateJobID() string {
 }
 
 // buildMessage constructs a Celery-compatible message.
-func buildMessage(jobID, sourceType, sourceURL string, metadata *models.TaskMetadata) ([]byte, error) {
-	body := buildBody(jobID, sourceType, sourceURL, metadata)
+func buildMessage(jobID, sourceType, sourceURL, pdfPath string, metadata *models.TaskMetadata) ([]byte, error) {
+	body := buildBody(jobID, sourceType, sourceURL, pdfPath, metadata)
 	headers := buildHeaders(jobID)
 	properties := buildProperties(jobID)
 
@@ -72,13 +82,18 @@ func buildMessage(jobID, sourceType, sourceURL string, metadata *models.TaskMeta
 }
 
 // buildBody creates the Celery message body: [args, kwargs, embed].
-func buildBody(jobID, sourceType, sourceURL string, metadata *models.TaskMetadata) []any {
+func buildBody(jobID, sourceType, sourceURL, pdfPath string, metadata *models.TaskMetadata) []any {
 	kwargs := map[string]any{
 		"job_id":      jobID,
 		"source_type": sourceType,
-		"source_url":  sourceURL,
 	}
 
+	if sourceURL != "" {
+		kwargs["source_url"] = sourceURL
+	}
+	if pdfPath != "" {
+		kwargs["pdf_path"] = pdfPath
+	}
 	if metadata != nil {
 		kwargs["metadata"] = metadata
 	}
