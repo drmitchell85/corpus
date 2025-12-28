@@ -72,17 +72,75 @@ API checks if text exists in DuckDB. If not, it queues the text for processing. 
 - GET `/texts?page=<n>&per_page=<n>` → list all ingested texts
 - GET `/ingest/status/<job_id>` → check ingestion job status
 
-## Workflow
+## Architecture
+
+### Ingestion Flow
 
 ```
-                    Ingestion Flow
-ingest endpoint → check DB → Redis queue → Celery workers → DuckDB
-                                                              ↓
-                    Search Flow                            (vectors)
-React frontend → Go API → embed service → DuckDB similarity search
-                            ↓
-                    (query → 384-dim vector)
+┌─────────────────────────────────────────────────────────────────┐
+│  USER SUBMITS TEXT                                              │
+│  POST /ingest (Gutenberg URL) or POST /upload (PDF file)        │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  GO API                                                         │
+│  ├── Checks DuckDB for duplicates                               │
+│  ├── Saves PDF to ./uploads/ (if PDF upload)                    │
+│  └── Queues job to Redis                                        │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  PYTHON WORKER (picks up job from Redis)                        │
+│  ├── workers/gutenberg.py fetches + strips boilerplate (URL)    │
+│  ├── workers/pdf.py extracts text from PDF (upload)             │
+│  ├── workers/chunker.py splits text into paragraphs             │
+│  ├── workers/embedder.py converts chunks → 384-dim vectors      │
+│  └── workers/db.py stores chunks + embeddings → DuckDB          │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  DUCKDB                                                         │
+│  └── Stores: text chunks, vector embeddings, metadata           │
+└─────────────────────────────────────────────────────────────────┘
 ```
+
+### Search Flow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  USER SEARCHES                                                  │
+│  GET /search?q=community+decline                                │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  GO API                                                         │
+│  └── Forwards query to embedding service                        │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  EMBEDDING SERVICE (FastAPI)                                    │
+│  └── Converts query text → 384-dim vector (all-MiniLM-L6-v2)    │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  DUCKDB                                                         │
+│  └── Vector similarity search, returns ranked results           │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Data Storage
+
+| Location | Contents |
+|----------|----------|
+| `./uploads/` | Original PDF files (preserved for re-processing) |
+| Redis | Temporary job queue messages |
+| DuckDB | Text chunks, 384-dim embeddings, metadata (author, title, year, genre) |
 
 ## Deployment
 

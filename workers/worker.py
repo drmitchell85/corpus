@@ -1,7 +1,10 @@
 """Celery worker tasks for text ingestion."""
 
+import os
+
 from workers.celery_config import app
 from workers.gutenberg import fetch_and_clean
+from workers.pdf import extract_and_clean as extract_pdf
 from workers.chunker import chunk_text
 from workers.embedder import embed_chunks
 from workers.db import store_chunks, init_schema
@@ -41,8 +44,11 @@ def process_text(self, job_id: str, source_type: str, source_url: str = None,
                 raise ValueError("source_url required for gutenberg source_type")
             text = fetch_and_clean(source_url)
         elif source_type == "pdf":
-            # PDF extraction will be implemented in Phase 3
-            raise NotImplementedError("PDF extraction not yet implemented")
+            if not pdf_path:
+                raise ValueError("pdf_path required for pdf source_type")
+            if not os.path.isfile(pdf_path):
+                raise FileNotFoundError(f"PDF file not found: {pdf_path}")
+            text = extract_pdf(pdf_path)
         else:
             raise ValueError(f"Unknown source_type: {source_type}")
 
