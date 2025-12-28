@@ -3,3 +3,7 @@ export type { NavLink } from './NavHeader';
 export { PageLayout } from './PageLayout';
 export { SearchInput } from './SearchInput';
 export type { SearchInputProps } from './SearchInput';
+export { ResultCard } from './ResultCard';
+export type { ResultCardProps } from './ResultCard';
+export { Pagination } from './Pagination';
+export type { PaginationProps } from './Pagination';

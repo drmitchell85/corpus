@@ -51,11 +51,11 @@
 - [x] Connect to GET `/search` endpoint
 - [x] Loading state handling
 
-### 4.4 Results Display
-- [ ] Result card component with passage text and metadata
-- [ ] Source attribution with title, author, year
-- [ ] Similarity score display
-- [ ] Paginated results list
+### 4.4 Results Display ✓
+- [x] Result card component with passage text and metadata
+- [x] Source attribution with title, author, year
+- [x] Similarity score display
+- [x] Paginated results list
 
 ### 4.5 Text Library View
 - [ ] List all ingested texts via GET `/texts`

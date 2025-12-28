@@ -473,6 +473,157 @@ hr {
   margin-bottom: var(--space-lg);
 }
 
+.search-results__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* ----------------------------------------------------------------------------
+   Result Card
+   ---------------------------------------------------------------------------- */
+.result-card {
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-accent);
+  border-radius: var(--border-radius);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-lg);
+  transition: border-left-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.result-card:hover {
+  border-left-color: var(--color-link);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.result-card__header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.result-card__rank {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  font-size: var(--font-size-sm);
+  font-weight: bold;
+  color: var(--color-text-secondary);
+}
+
+.result-card__meta {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-xs);
+  font-size: var(--font-size-sm);
+}
+
+.result-card__title {
+  font-style: italic;
+  color: var(--color-text-primary);
+  font-weight: normal;
+}
+
+.result-card__author {
+  color: var(--color-text-secondary);
+}
+
+.result-card__author::before {
+  content: '—';
+  margin-right: var(--space-xs);
+}
+
+.result-card__year {
+  color: var(--color-text-secondary);
+}
+
+.result-card__genre {
+  color: var(--color-text-secondary);
+  padding-left: var(--space-sm);
+}
+
+.result-card__genre::before {
+  content: '•';
+  margin-right: var(--space-xs);
+}
+
+.result-card__score {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0;
+  text-align: right;
+}
+
+.result-card__score-value {
+  font-size: var(--font-size-lg);
+  font-weight: bold;
+  color: var(--color-link);
+  line-height: 1;
+}
+
+.result-card__score-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.result-card__text {
+  margin: 0;
+  padding: 0;
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-primary);
+  border-left: none;
+  quotes: '"' '"' ''' ''';
+}
+
+.result-card__text::before,
+.result-card__text::after {
+  content: none;
+}
+
+/* ----------------------------------------------------------------------------
+   Pagination
+   ---------------------------------------------------------------------------- */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-xl);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.pagination__info {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0 var(--space-md);
+}
+
+.pagination__button {
+  min-width: 80px;
+}
+
+.pagination__button:disabled {
+  opacity: 0.5;
+}
+
 /* ----------------------------------------------------------------------------
    Loading States
    ---------------------------------------------------------------------------- */
@@ -540,5 +691,39 @@ hr {
 
   .page-content {
     padding: var(--space-lg) var(--space-md);
+  }
+
+  .result-card__header {
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .result-card__rank {
+    align-self: flex-start;
+  }
+
+  .result-card__score {
+    align-self: flex-start;
+    flex-direction: row;
+    align-items: baseline;
+    gap: var(--space-xs);
+  }
+
+  .result-card__meta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .pagination {
+    flex-direction: column;
+  }
+
+  .pagination__info {
+    order: -1;
+    margin: 0 0 var(--space-sm) 0;
+  }
+
+  .pagination__button {
+    width: 100%;
   }
 }
