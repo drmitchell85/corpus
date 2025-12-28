@@ -232,7 +232,25 @@ When working on a new feature phase:
     - Mark completed items in `ROADMAP.md`
     - Update Swagger JSDoc if API changed
     - Update Postman collection if endpoints added/changed
+    - Update the scratchpad in `.claude/EXECUTION_LOG.md`
 5. **Provide commit message** when requested
+
+## Scratchpad Pattern
+
+Maintain an execution log at `.claude/EXECUTION_LOG.md` as you work. After each significant chunk of work:
+
+1. Document what was accomplished
+2. Note any key decisions and why you made them
+3. List any blockers, errors, or gotchas you discovered
+4. Mention what you're about to tackle next
+
+This helps when restarting sessions—you can immediately understand what's been tried, what failed, and what the current state is.
+
+Format:
+- **Completed**: Brief description + files touched
+- **Decisions**: Why you chose approach X over Y
+- **Blockers**: Any issues, workarounds, or things to revisit
+- **Next**: What you're starting next time
 
 **Commit Message Format:**
 ```
