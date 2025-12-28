@@ -40,11 +40,11 @@
 - [x] Configure TypeScript and project structure
 - [x] Set up API client utilities for backend communication
 
-### 4.2 Academic Layout & Styling
-- [ ] Create base CSS with academic early-internet aesthetic
-- [ ] Serif typography (Georgia/Times), minimal decoration
-- [ ] Simple navigation header and page layout components
-- [ ] Color palette: cream backgrounds, blue links, subtle borders
+### 4.2 Academic Layout & Styling ✓
+- [x] Create base CSS with academic early-internet aesthetic
+- [x] Serif typography (Georgia/Times), minimal decoration
+- [x] Simple navigation header and page layout components
+- [x] Color palette: cream backgrounds, blue links, subtle borders
 
 ### 4.3 Search Interface
 - [ ] Search input component with submit button
