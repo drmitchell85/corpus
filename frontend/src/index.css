@@ -439,6 +439,41 @@ hr {
 }
 
 /* ----------------------------------------------------------------------------
+   Search Form
+   ---------------------------------------------------------------------------- */
+.search-form {
+  margin-bottom: var(--space-xl);
+}
+
+.search-form__row {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.search-form__input {
+  flex: 1;
+}
+
+.search-form__button {
+  flex-shrink: 0;
+  min-width: 100px;
+}
+
+/* ----------------------------------------------------------------------------
+   Search Results
+   ---------------------------------------------------------------------------- */
+.search-results {
+  margin-top: var(--space-lg);
+}
+
+.search-results__summary {
+  color: var(--color-text-secondary);
+  border-bottom: 1px solid var(--color-border-light);
+  padding-bottom: var(--space-sm);
+  margin-bottom: var(--space-lg);
+}
+
+/* ----------------------------------------------------------------------------
    Loading States
    ---------------------------------------------------------------------------- */
 .loading {
