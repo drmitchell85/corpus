@@ -46,10 +46,10 @@
 - [x] Simple navigation header and page layout components
 - [x] Color palette: cream backgrounds, blue links, subtle borders
 
-### 4.3 Search Interface
-- [ ] Search input component with submit button
-- [ ] Connect to GET `/search` endpoint
-- [ ] Loading state handling
+### 4.3 Search Interface ✓
+- [x] Search input component with submit button
+- [x] Connect to GET `/search` endpoint
+- [x] Loading state handling
 
 ### 4.4 Results Display
 - [ ] Result card component with passage text and metadata
