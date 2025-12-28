@@ -17,9 +17,9 @@
 
 ## Phase 3: PDF Support
 
-### 3.1 PDF extraction
-- [ ] Add PyMuPDF to requirements
-- [ ] PDF text extraction function in workers/
+### 3.1 PDF extraction ✓
+- [x] Add PyMuPDF to requirements
+- [x] PDF text extraction function in workers/
 
 ### 3.2 Worker routing
 - [ ] Update worker to handle `source_type: pdf`
