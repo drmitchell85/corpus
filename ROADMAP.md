@@ -1,55 +1,70 @@
 # Roadmap
 
-## Phase 1: Core Pipeline
+## Phase 1: Core Pipeline ✓
 
-### 1.1 Project foundation
-- [x] `requirements.txt` (celery, redis, sentence-transformers, duckdb, requests)
-- [x] `.gitignore` (corpus.db, __pycache__, uploads/, .env, venv/)
-- [x] Create `workers/` directory structure
+### 1.1 Project setup
+- [x] Project foundation (requirements.txt, .gitignore, workers/ structure)
+- [x] DuckDB schema with texts table and indexes
+- [x] Celery + Redis configuration
 
-### 1.2 DuckDB schema setup
-- [x] Schema initialization script/function
-- [x] Create `texts` table with embedding column (FLOAT4[384])
-- [x] Create indexes on year and genre
+### 1.2 Ingestion pipeline
+- [x] Gutenberg fetcher with boilerplate stripper
+- [x] Paragraph-aware text chunker (100-2000 chars)
+- [x] Sentence-transformers embedder (all-MiniLM-L6-v2, 384-dim)
+- [x] DuckDB storage with hash-based duplicate detection
 
-### 1.3 Celery + Redis configuration
-- [x] `workers/celery_config.py` — Celery app config with Redis broker
-- [x] Basic `workers/worker.py` skeleton with task decorator
-
-### 1.4 Gutenberg fetcher + boilerplate stripper
-- [x] Function to fetch text from Gutenberg URL
-- [x] Function to strip Gutenberg header/footer markers
-
-### 1.5 Text chunker
-- [x] Function to split text into chunks (100-2000 chars)
-- [x] Paragraph-aware splitting logic
-
-### 1.6 Embedding with sentence-transformers
-- [x] Load `all-MiniLM-L6-v2` model
-- [x] Function to embed text chunks → 384-dim vectors
-
-### 1.7 DuckDB storage + task wiring
-- [x] Function to store chunks + embeddings in DuckDB
-- [x] Hash generation for duplicate detection
-- [x] Wire all components into the Celery task
-
-### 1.8 End-to-end test
-- [x] Test script to manually ingest a Gutenberg text
-- [x] Verify data in DuckDB
+### 1.3 Testing
+- [x] End-to-end test script with verification
 
 ## Phase 2: Go API
 
-- [ ] POST `/ingest` — accept Gutenberg URL + metadata, queue job
-- [ ] POST `/upload` — accept PDF + metadata, save file, queue job
-- [ ] GET `/ingest/status/:id` — job status lookup
-- [ ] GET `/texts` — list all ingested texts
-- [ ] GET `/search` — semantic search
-- [ ] Duplicate detection (hash check before queueing)
+### 2.1 Go project foundation
+- [x] Initialize Go module and directory structure (`api/`)
+- [x] Add dependencies (HTTP router, Redis client, DuckDB driver)
+- [x] Basic server skeleton with health check endpoint
+
+### 2.2 Redis/Celery integration
+- [x] Connect to Redis broker
+- [x] Helper function to queue Celery tasks from Go
+- [x] Job ID generation
+
+### 2.3 POST `/ingest`
+- [x] Accept Gutenberg URL + metadata JSON
+- [x] Duplicate detection (hash check before queueing)
+- [x] Queue job to Celery worker
+- [x] Return job ID
+
+### 2.4 GET `/ingest/status/:id`
+- [x] Look up job status from Celery result backend
+- [x] Return status, progress, and result details
+
+### 2.5 GET `/texts`
+- [x] List all ingested texts from DuckDB
+- [x] Include metadata (author, title, year, genre)
+- [x] Basic pagination
+
+### 2.6 GET `/search`
+- [x] Accept query string parameter
+- [x] Embed query with sentence-transformers (or call Python)
+- [x] Vector similarity search in DuckDB
+- [x] Return ranked results with metadata
 
 ## Phase 3: PDF Support
 
-- [ ] Python worker: PDF text extraction (PyMuPDF)
-- [ ] Worker routing based on `source_type`
+### 3.1 PDF extraction
+- [ ] Add PyMuPDF to requirements
+- [ ] PDF text extraction function in workers/
+
+### 3.2 Worker routing
+- [ ] Update worker to handle `source_type: pdf`
+- [ ] File path handling for uploaded PDFs
+
+### 3.3 Upload endpoint
+- [ ] POST `/upload` — accept PDF + metadata
+- [ ] Save file to uploads/ directory
+- [ ] Queue PDF job to worker
+
+### 3.4 Testing
 - [ ] Test with sample PDFs
 
 ## Phase 4: React Frontend
@@ -65,4 +80,3 @@
 - [ ] Error handling and retries
 - [ ] Input validation
 - [ ] Basic logging
-- [ ] .gitignore cleanup

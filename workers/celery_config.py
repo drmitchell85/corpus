@@ -1,9 +1,15 @@
 """Celery configuration with Redis broker."""
 
-from celery import Celery
+import os
+from pathlib import Path
 
-# Redis connection URL (default to localhost)
-REDIS_URL = "redis://localhost:6379/0"
+from celery import Celery
+from dotenv import load_dotenv
+
+# Load .env from project root
+load_dotenv(Path(__file__).parent.parent / ".env")
+
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
 # Create Celery app
 app = Celery(

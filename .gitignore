@@ -20,5 +20,8 @@ uploads/
 .vscode/
 .idea/
 
+# Go
+api/corpus-api
+
 # Claude
 .claude
