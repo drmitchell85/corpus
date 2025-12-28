@@ -15,7 +15,7 @@
 - GET `/texts` with metadata and pagination
 - GET `/search` with vector similarity search and ranked results
 
-## Phase 3: PDF Support
+## Phase 3: PDF Support ✓
 
 ### 3.1 PDF extraction ✓
 - [x] Add PyMuPDF to requirements
@@ -30,8 +30,8 @@
 - [x] Save file to uploads/ directory
 - [x] Queue PDF job to worker
 
-### 3.4 Testing
-- [ ] Test with sample PDFs
+### 3.4 Testing ✓
+- [x] Test with sample PDFs (17 tests: unit + integration)
 
 ## Phase 4: React Frontend
 
