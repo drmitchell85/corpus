@@ -261,15 +261,11 @@ For complex features, use multiple Claude instances for better code quality:
 Writer Claude ──► WRITER.md ──► Reviewer Claude ──► REVIEW.md ──► Editor Claude
 ```
 
-### Scratchpad Files
-- `.claude/EXECUTION_LOG.md` - Ongoing session log (from Scratchpad Pattern above)
+### Scratchpad Files (already exist with templates)
 - `.claude/scratchpads/WRITER.md` - Writer documents implementation
 - `.claude/scratchpads/REVIEW.md` - Reviewer documents feedback
 
-### Setup (one-time)
-```bash
-mkdir -p .claude/scratchpads
-```
+**Important:** These files already exist. Always READ them first before writing to preserve the template structure.
 
 ### Workflow Steps
 
