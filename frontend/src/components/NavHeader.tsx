@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 export interface NavLink {
   label: string;
   href: string;
@@ -19,15 +21,15 @@ export function NavHeader({
     <header className="nav-header">
       <div className="nav-header__inner">
         <h1 className="nav-header__title">
-          <a href="/">{title}</a>
+          <Link to="/">{title}</Link>
         </h1>
         {links.length > 0 && (
           <nav>
             <ul className="nav-header__links">
               {links.map((link) => (
                 <li key={link.href}>
-                  <a
-                    href={link.href}
+                  <Link
+                    to={link.href}
                     className={
                       link.active || link.href === currentPath ? 'active' : undefined
                     }
@@ -36,7 +38,7 @@ export function NavHeader({
                     }
                   >
                     {link.label}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>

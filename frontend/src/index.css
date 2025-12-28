@@ -598,6 +598,89 @@ hr {
 }
 
 /* ----------------------------------------------------------------------------
+   Text Card (Library View)
+   ---------------------------------------------------------------------------- */
+.text-card {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.text-card:hover {
+  border-color: var(--color-link);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.text-card__header {
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.text-card__title {
+  margin-bottom: var(--space-xs);
+}
+
+.text-card__author {
+  margin: 0;
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+}
+
+.text-card__year {
+  color: var(--color-text-secondary);
+}
+
+.text-card__details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+  font-size: var(--font-size-sm);
+}
+
+.text-card__detail {
+  color: var(--color-text-secondary);
+}
+
+.text-card__detail strong {
+  color: var(--color-text-primary);
+  font-weight: normal;
+  font-style: italic;
+}
+
+.text-card__source {
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.text-card__source-link {
+  font-size: var(--font-size-sm);
+}
+
+/* ----------------------------------------------------------------------------
+   Library View
+   ---------------------------------------------------------------------------- */
+.library-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.library-list__empty {
+  text-align: center;
+  padding: var(--space-2xl);
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.library-summary {
+  color: var(--color-text-secondary);
+  border-bottom: 1px solid var(--color-border-light);
+  padding-bottom: var(--space-sm);
+  margin-bottom: var(--space-lg);
+}
+
+/* ----------------------------------------------------------------------------
    Pagination
    ---------------------------------------------------------------------------- */
 .pagination {
