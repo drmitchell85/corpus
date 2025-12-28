@@ -33,7 +33,7 @@ embed: install
 	$(VENV)/bin/uvicorn services.embed_service:app --host 0.0.0.0 --port 8001
 
 api:
-	cd api && go build -o corpus-api ./cmd && ./corpus-api
+	cd api && go build -o corpus-api ./cmd && DATABASE_PATH=../corpus.db UPLOAD_PATH=../uploads ./corpus-api
 
 # Frontend commands
 frontend-install:
