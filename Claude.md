@@ -237,20 +237,61 @@ When working on a new feature phase:
 
 ## Scratchpad Pattern
 
-Maintain an execution log at `.claude/EXECUTION_LOG.md` as you work. After each significant chunk of work:
+Maintain an execution log at `.claude/EXECUTION_LOG.md` as you work.
 
-1. Document what was accomplished
-2. Note any key decisions and why you made them
-3. List any blockers, errors, or gotchas you discovered
-4. Mention what you're about to tackle next
+**During the session:** Update it as you go (not just at the end). After completing each logical step:
+- Note what was just accomplished
+- Mention any decisions and why
+- List blockers or gotchas discovered
+- Preview what's next
 
-This helps when restarting sessions—you can immediately understand what's been tried, what failed, and what the current state is.
+**At session end:** Summarize the overall progress for next session context.
 
 Format:
 - **Completed**: Brief description + files touched
-- **Decisions**: Why you chose approach X over Y
-- **Blockers**: Any issues, workarounds, or things to revisit
-- **Next**: What you're starting next time
+- **Decisions**: Why approach X over Y
+- **Blockers**: Issues, workarounds, things to revisit
+- **Next**: What to tackle next time
+
+## Multi-Claude Workflow (Writer + Reviewer)
+
+For complex features, use multiple Claude instances for better code quality:
+
+```
+Writer Claude ──► WRITER.md ──► Reviewer Claude ──► REVIEW.md ──► Editor Claude
+```
+
+### Scratchpad Files
+- `.claude/EXECUTION_LOG.md` - Ongoing session log (from Scratchpad Pattern above)
+- `.claude/scratchpads/WRITER.md` - Writer documents implementation
+- `.claude/scratchpads/REVIEW.md` - Reviewer documents feedback
+
+### Setup (one-time)
+```bash
+mkdir -p .claude/scratchpads
+```
+
+### Workflow Steps
+
+**Step 1: Writer Claude** (Terminal 1)
+```
+> "Implement [feature]. Document your work in .claude/scratchpads/WRITER.md"
+```
+
+**Step 2: Reviewer Claude** (Terminal 2 or after `/clear`)
+```
+> "Review [feature]. Read .claude/scratchpads/WRITER.md and the code. Write feedback to .claude/scratchpads/REVIEW.md"
+```
+
+**Step 3: Editor Claude** (fresh instance after `/clear`)
+```
+> "Apply the review feedback from .claude/scratchpads/REVIEW.md to [feature]. Reference .claude/scratchpads/WRITER.md for implementation context."
+```
+
+### Why This Works
+- **Fresh context** prevents cognitive overload
+- **Separation of concerns** mirrors human code review
+- **Adversarial verification** catches issues a single context might miss
 
 **Commit Message Format:**
 ```
