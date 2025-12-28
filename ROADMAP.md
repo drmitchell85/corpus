@@ -21,9 +21,9 @@
 - [x] Add PyMuPDF to requirements
 - [x] PDF text extraction function in workers/
 
-### 3.2 Worker routing
-- [ ] Update worker to handle `source_type: pdf`
-- [ ] File path handling for uploaded PDFs
+### 3.2 Worker routing ✓
+- [x] Update worker to handle `source_type: pdf`
+- [x] File path handling for uploaded PDFs
 
 ### 3.3 Upload endpoint
 - [ ] POST `/upload` — accept PDF + metadata
