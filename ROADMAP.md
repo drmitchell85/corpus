@@ -72,10 +72,10 @@
 - [x] Metadata fields for uploaded document
 - [x] Submit to POST `/upload` endpoint
 
-### 4.8 Job Status Indicator
-- [ ] Poll GET `/ingest/status/:id` after submission
-- [ ] Progress indicator component
-- [ ] Success/error state display
+### 4.8 Job Status Indicator ✓
+- [x] Poll GET `/ingest/status/:id` after submission
+- [x] Progress indicator component
+- [x] Success/error state display
 
 ## Phase 5: Polish
 

@@ -1,5 +1,5 @@
-import { useState, type FormEvent, type ChangeEvent } from 'react';
-import { PageLayout } from '@/components';
+import { useState, useRef, type FormEvent, type ChangeEvent } from 'react';
+import { PageLayout, JobStatusIndicator } from '@/components';
 import { uploadPdf } from '@/api/client';
 
 interface FormData {
@@ -33,6 +33,8 @@ export function UploadPage() {
     jobId?: string;
     filename?: string;
   } | null>(null);
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
@@ -117,8 +119,16 @@ export function UploadPage() {
           jobId: response.job_id,
           filename: response.filename,
         });
+        // Start tracking job status
+        if (response.job_id) {
+          setActiveJobId(response.job_id);
+        }
         // Reset form on success
         setFormData(INITIAL_FORM_DATA);
+        // Clear file input visual selection
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
       } else {
         setSubmitStatus({
           type: 'error',
@@ -149,6 +159,7 @@ export function UploadPage() {
             PDF File <span className="required">*</span>
           </label>
           <input
+            ref={fileInputRef}
             id="file"
             name="file"
             type="file"
@@ -251,24 +262,28 @@ export function UploadPage() {
         </div>
       </form>
 
-      {submitStatus && (
+      {submitStatus && submitStatus.type === 'error' && (
         <div
-          className={`status status--${submitStatus.type}`}
+          className="status status--error"
           role="alert"
           aria-live="polite"
         >
           <p>{submitStatus.message}</p>
-          {submitStatus.filename && (
-            <p className="text-small">
-              File: <code>{submitStatus.filename}</code>
-            </p>
-          )}
-          {submitStatus.jobId && (
-            <p className="text-small">
-              Job ID: <code>{submitStatus.jobId}</code>
-            </p>
-          )}
         </div>
+      )}
+
+      {activeJobId && (
+        <JobStatusIndicator
+          jobId={activeJobId}
+          onComplete={() => {
+            // Clear active job when complete
+            setActiveJobId(null);
+          }}
+          onError={() => {
+            // Clear active job on error (error is displayed by indicator)
+            setActiveJobId(null);
+          }}
+        />
       )}
     </PageLayout>
   );

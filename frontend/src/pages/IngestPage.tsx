@@ -1,5 +1,5 @@
 import { useState, type FormEvent, type ChangeEvent } from 'react';
-import { PageLayout } from '@/components';
+import { PageLayout, JobStatusIndicator } from '@/components';
 import { ingestUrl } from '@/api/client';
 import type { IngestMetadata } from '@/types/api';
 
@@ -33,6 +33,7 @@ export function IngestPage() {
     message: string;
     jobId?: string;
   } | null>(null);
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -105,6 +106,10 @@ export function IngestPage() {
           message: response.message || 'Text queued for ingestion successfully!',
           jobId: response.job_id,
         });
+        // Start tracking job status
+        if (response.job_id) {
+          setActiveJobId(response.job_id);
+        }
         // Reset form on success
         setFormData(INITIAL_FORM_DATA);
       } else {
@@ -235,19 +240,28 @@ export function IngestPage() {
         </div>
       </form>
 
-      {submitStatus && (
+      {submitStatus && submitStatus.type === 'error' && (
         <div
-          className={`status status--${submitStatus.type}`}
+          className="status status--error"
           role="alert"
           aria-live="polite"
         >
           <p>{submitStatus.message}</p>
-          {submitStatus.jobId && (
-            <p className="text-small">
-              Job ID: <code>{submitStatus.jobId}</code>
-            </p>
-          )}
         </div>
+      )}
+
+      {activeJobId && (
+        <JobStatusIndicator
+          jobId={activeJobId}
+          onComplete={() => {
+            // Clear active job when complete
+            setActiveJobId(null);
+          }}
+          onError={() => {
+            // Clear active job on error (error is displayed by indicator)
+            setActiveJobId(null);
+          }}
+        />
       )}
     </PageLayout>
   );

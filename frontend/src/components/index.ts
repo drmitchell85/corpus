@@ -9,3 +9,5 @@ export { TextCard } from './TextCard';
 export type { TextCardProps } from './TextCard';
 export { Pagination } from './Pagination';
 export type { PaginationProps } from './Pagination';
+export { JobStatusIndicator } from './JobStatusIndicator';
+export type { JobStatusIndicatorProps } from './JobStatusIndicator';
