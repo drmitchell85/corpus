@@ -12,6 +12,7 @@ import (
 	"corpus/api/internal/redis"
 
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 )
 
 const (
@@ -156,7 +157,10 @@ func GetJobStatus(ctx context.Context, jobID string) (string, error) {
 
 	result, err := redis.Client().Get(ctx, key).Result()
 	if err != nil {
-		return "PENDING", nil // No result yet means pending
+		if err == goredis.Nil {
+			return "PENDING", nil // No result yet means pending
+		}
+		return "", fmt.Errorf("get job status: %w", err)
 	}
 
 	var taskResult struct {
@@ -175,7 +179,10 @@ func GetJobResult(ctx context.Context, jobID string) (map[string]any, error) {
 
 	result, err := redis.Client().Get(ctx, key).Result()
 	if err != nil {
-		return nil, nil // No result yet
+		if err == goredis.Nil {
+			return nil, nil // No result yet
+		}
+		return nil, fmt.Errorf("get job result: %w", err)
 	}
 
 	var taskResult map[string]any

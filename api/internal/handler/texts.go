@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -31,9 +32,19 @@ func ListTexts(w http.ResponseWriter, r *http.Request) {
 
 	rows, total, err := db.ListTexts(r.Context(), page, perPage)
 	if err != nil {
+		slog.Error("database error listing texts",
+			"error", err,
+			"page", page,
+			"per_page", perPage,
+			"operation", "ListTexts")
 		respondFailure(w, http.StatusInternalServerError, "database error")
 		return
 	}
+
+	slog.Info("texts listed",
+		"page", page,
+		"per_page", perPage,
+		"total", total)
 
 	texts := make([]models.TextItem, 0, len(rows))
 	for _, row := range rows {

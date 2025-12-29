@@ -2,6 +2,7 @@ package handler
 
 import (
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -15,9 +16,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// maxUploadSize is the maximum allowed upload size (50MB).
-const maxUploadSize = 50 << 20
-
 // Upload handles POST /upload requests for PDF files.
 func Upload(w http.ResponseWriter, r *http.Request) {
 	// Limit request body size
@@ -25,6 +23,9 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 
 	// Parse multipart form (max 10MB in memory, rest goes to temp files)
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		slog.Error("failed to parse multipart form",
+			"error", err,
+			"remote_addr", r.RemoteAddr)
 		respondFailure(w, http.StatusBadRequest, "file too large or invalid form data")
 		return
 	}
@@ -32,6 +33,9 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 	// Get the uploaded file
 	file, header, err := r.FormFile("file")
 	if err != nil {
+		slog.Warn("missing file field in upload request",
+			"error", err,
+			"remote_addr", r.RemoteAddr)
 		respondFailure(w, http.StatusBadRequest, "file field is required")
 		return
 	}
@@ -39,12 +43,18 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 
 	// Validate file extension
 	if !strings.HasSuffix(strings.ToLower(header.Filename), ".pdf") {
+		slog.Warn("non-PDF file upload rejected",
+			"filename", header.Filename,
+			"remote_addr", r.RemoteAddr)
 		respondFailure(w, http.StatusBadRequest, "only PDF files are accepted")
 		return
 	}
 
 	// Ensure upload directory exists
 	if err := os.MkdirAll(config.UploadPath, 0755); err != nil {
+		slog.Error("failed to create upload directory",
+			"error", err,
+			"path", config.UploadPath)
 		respondFailure(w, http.StatusInternalServerError, "failed to create upload directory")
 		return
 	}
@@ -57,14 +67,32 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 	// Create destination file
 	dest, err := os.Create(destPath)
 	if err != nil {
+		slog.Error("failed to create destination file",
+			"error", err,
+			"path", destPath,
+			"filename", header.Filename)
 		respondFailure(w, http.StatusInternalServerError, "failed to save file")
 		return
 	}
-	defer dest.Close()
+	defer func() {
+		if err := dest.Close(); err != nil {
+			slog.Error("failed to close destination file",
+				"error", err,
+				"path", destPath)
+		}
+	}()
 
 	// Copy uploaded file to destination
 	if _, err := io.Copy(dest, file); err != nil {
-		os.Remove(destPath) // Clean up on failure
+		slog.Error("failed to copy uploaded file",
+			"error", err,
+			"path", destPath,
+			"filename", header.Filename)
+		if err := os.Remove(destPath); err != nil {
+			slog.Warn("failed to clean up uploaded file after copy failure",
+				"error", err,
+				"path", destPath)
+		}
 		respondFailure(w, http.StatusInternalServerError, "failed to save file")
 		return
 	}
@@ -75,7 +103,14 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 	// Convert to absolute path for worker (worker runs from different cwd)
 	absPath, err := filepath.Abs(destPath)
 	if err != nil {
-		os.Remove(destPath)
+		slog.Error("failed to resolve absolute path",
+			"error", err,
+			"path", destPath)
+		if err := os.Remove(destPath); err != nil {
+			slog.Warn("failed to clean up uploaded file after path resolution failure",
+				"error", err,
+				"path", destPath)
+		}
 		respondFailure(w, http.StatusInternalServerError, "failed to resolve file path")
 		return
 	}
@@ -83,10 +118,23 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 	// Queue job for processing
 	result, err := celery.QueuePDFJob(r.Context(), absPath, metadata)
 	if err != nil {
-		os.Remove(destPath) // Clean up on failure
+		slog.Error("failed to queue PDF job",
+			"error", err,
+			"path", absPath,
+			"filename", header.Filename)
+		if err := os.Remove(destPath); err != nil {
+			slog.Warn("failed to clean up uploaded file after queue failure",
+				"error", err,
+				"path", destPath)
+		}
 		respondFailure(w, http.StatusInternalServerError, "failed to queue job")
 		return
 	}
+
+	slog.Info("PDF upload job queued",
+		"job_id", result.JobID,
+		"filename", header.Filename,
+		"path", absPath)
 
 	respondSuccess(w, http.StatusAccepted, models.UploadResponse{
 		JobID:    result.JobID,

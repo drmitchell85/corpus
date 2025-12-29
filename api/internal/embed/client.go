@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -42,7 +43,12 @@ func GetEmbedding(ctx context.Context, text string) ([]float32, error) {
 	if err != nil {
 		return nil, fmt.Errorf("embed service request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			slog.Warn("failed to close embed service response body",
+				"error", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("embed service returned status %d", resp.StatusCode)

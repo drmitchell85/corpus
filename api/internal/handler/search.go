@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log/slog"
 	"net/http"
 
 	"corpus/api/internal/db"
@@ -17,6 +18,8 @@ const (
 func Search(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("q")
 	if query == "" {
+		slog.Warn("search request missing query parameter",
+			"remote_addr", r.RemoteAddr)
 		respondFailure(w, http.StatusBadRequest, "query parameter 'q' is required")
 		return
 	}
@@ -32,6 +35,10 @@ func Search(w http.ResponseWriter, r *http.Request) {
 	// Get embedding from Python service
 	embedding, err := embed.GetEmbedding(r.Context(), query)
 	if err != nil {
+		slog.Error("embedding service error",
+			"error", err,
+			"query", query,
+			"operation", "GetEmbedding")
 		respondFailure(w, http.StatusServiceUnavailable, "embedding service unavailable")
 		return
 	}
@@ -39,6 +46,11 @@ func Search(w http.ResponseWriter, r *http.Request) {
 	// Perform vector similarity search
 	rows, err := db.SearchTexts(r.Context(), embedding, limit)
 	if err != nil {
+		slog.Error("database search error",
+			"error", err,
+			"query", query,
+			"limit", limit,
+			"operation", "SearchTexts")
 		respondFailure(w, http.StatusInternalServerError, "search failed")
 		return
 	}
@@ -56,6 +68,11 @@ func Search(w http.ResponseWriter, r *http.Request) {
 			Genre:     row.Genre.String,
 		})
 	}
+
+	slog.Info("search completed",
+		"query", query,
+		"result_count", len(results),
+		"limit", limit)
 
 	respondSuccess(w, http.StatusOK, models.SearchResponse{
 		Query:   query,

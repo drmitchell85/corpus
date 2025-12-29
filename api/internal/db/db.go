@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"corpus/api/internal/config"
@@ -24,7 +25,13 @@ func SourceExists(ctx context.Context, sourceURL string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("failed to connect to database: %w", err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			slog.Warn("failed to close database connection",
+				"error", err,
+				"operation", "SourceExists")
+		}
+	}()
 
 	var exists bool
 	err = db.QueryRowContext(ctx,
@@ -44,7 +51,13 @@ func HashExists(ctx context.Context, hash string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("failed to connect to database: %w", err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			slog.Warn("failed to close database connection",
+				"error", err,
+				"operation", "HashExists")
+		}
+	}()
 
 	var exists bool
 	err = db.QueryRowContext(ctx,
@@ -64,7 +77,13 @@ func ListTexts(ctx context.Context, page, perPage int) ([]models.TextRow, int, e
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to connect to database: %w", err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			slog.Warn("failed to close database connection",
+				"error", err,
+				"operation", "ListTexts")
+		}
+	}()
 
 	offset := (page - 1) * perPage
 
@@ -119,7 +138,13 @@ func SearchTexts(ctx context.Context, embedding []float32, limit int) ([]models.
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			slog.Warn("failed to close database connection",
+				"error", err,
+				"operation", "SearchTexts")
+		}
+	}()
 
 	// Build the embedding array literal for DuckDB
 	embeddingLiteral := floatsToArrayLiteral(embedding)
