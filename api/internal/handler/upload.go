@@ -72,8 +72,16 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 	// Parse optional metadata from form fields
 	metadata := parseUploadMetadata(r)
 
+	// Convert to absolute path for worker (worker runs from different cwd)
+	absPath, err := filepath.Abs(destPath)
+	if err != nil {
+		os.Remove(destPath)
+		respondFailure(w, http.StatusInternalServerError, "failed to resolve file path")
+		return
+	}
+
 	// Queue job for processing
-	result, err := celery.QueuePDFJob(r.Context(), destPath, metadata)
+	result, err := celery.QueuePDFJob(r.Context(), absPath, metadata)
 	if err != nil {
 		os.Remove(destPath) // Clean up on failure
 		respondFailure(w, http.StatusInternalServerError, "failed to queue job")
