@@ -57,10 +57,10 @@
 - [x] Similarity score display
 - [x] Paginated results list
 
-### 4.5 Text Library View
-- [ ] List all ingested texts via GET `/texts`
-- [ ] Display metadata (title, author, source type)
-- [ ] Pagination controls
+### 4.5 Text Library View ✓
+- [x] List all ingested texts via GET `/texts`
+- [x] Display metadata (title, author, source type)
+- [x] Pagination controls
 
 ### 4.6 Ingestion Form (URL)
 - [ ] URL input with metadata fields (title, author, year)
