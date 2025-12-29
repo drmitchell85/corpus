@@ -67,10 +67,10 @@
 - [x] Form validation
 - [x] Submit to POST `/ingest` endpoint
 
-### 4.7 PDF Upload Form
-- [ ] File input for PDF selection
-- [ ] Metadata fields for uploaded document
-- [ ] Submit to POST `/upload` endpoint
+### 4.7 PDF Upload Form ✓
+- [x] File input for PDF selection
+- [x] Metadata fields for uploaded document
+- [x] Submit to POST `/upload` endpoint
 
 ### 4.8 Job Status Indicator
 - [ ] Poll GET `/ingest/status/:id` after submission

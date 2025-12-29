@@ -5,6 +5,7 @@ const NAV_LINKS = [
   { label: 'Search', href: '/' },
   { label: 'Library', href: '/library' },
   { label: 'Ingest', href: '/ingest' },
+  { label: 'Upload', href: '/upload' },
 ];
 
 interface PageLayoutProps {
