@@ -35,11 +35,47 @@
 
 ## Phase 4: React Frontend
 
-- [ ] Search interface
-- [ ] Results display with metadata
-- [ ] Ingestion form (URL input + metadata fields)
-- [ ] PDF upload form
-- [ ] Job status indicator
+### 4.1 Project Setup ✓
+- [x] Initialize React app with Vite
+- [x] Configure TypeScript and project structure
+- [x] Set up API client utilities for backend communication
+
+### 4.2 Academic Layout & Styling ✓
+- [x] Create base CSS with academic early-internet aesthetic
+- [x] Serif typography (Georgia/Times), minimal decoration
+- [x] Simple navigation header and page layout components
+- [x] Color palette: cream backgrounds, blue links, subtle borders
+
+### 4.3 Search Interface ✓
+- [x] Search input component with submit button
+- [x] Connect to GET `/search` endpoint
+- [x] Loading state handling
+
+### 4.4 Results Display ✓
+- [x] Result card component with passage text and metadata
+- [x] Source attribution with title, author, year
+- [x] Similarity score display
+- [x] Paginated results list
+
+### 4.5 Text Library View ✓
+- [x] List all ingested texts via GET `/texts`
+- [x] Display metadata (title, author, source type)
+- [x] Pagination controls
+
+### 4.6 Ingestion Form (URL) ✓
+- [x] URL input with metadata fields (title, author, year)
+- [x] Form validation
+- [x] Submit to POST `/ingest` endpoint
+
+### 4.7 PDF Upload Form ✓
+- [x] File input for PDF selection
+- [x] Metadata fields for uploaded document
+- [x] Submit to POST `/upload` endpoint
+
+### 4.8 Job Status Indicator ✓
+- [x] Poll GET `/ingest/status/:id` after submission
+- [x] Progress indicator component
+- [x] Success/error state display
 
 ## Phase 5: Polish
 
