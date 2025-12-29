@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
-	"sync"
 
 	"corpus/api/internal/config"
 	"corpus/api/internal/models"
@@ -13,36 +12,22 @@ import (
 	_ "github.com/marcboeker/go-duckdb"
 )
 
-var (
-	conn *sql.DB
-	once sync.Once
-)
-
-// DB returns the singleton DuckDB connection.
-// Opens connection on first call using config.DBPath.
-func DB() *sql.DB {
-	once.Do(func() {
-		var err error
-		conn, err = sql.Open("duckdb", config.DBPath+"?access_mode=read_only")
-		if err != nil {
-			panic("failed to open duckdb: " + err.Error())
-		}
-	})
-	return conn
-}
-
-// Close gracefully shuts down the database connection.
-func Close() error {
-	if conn != nil {
-		return conn.Close()
-	}
-	return nil
+// getConnection opens a new read-only connection to the DuckDB database.
+// Caller is responsible for closing the connection.
+func getConnection() (*sql.DB, error) {
+	return sql.Open("duckdb", config.DBPath+"?access_mode=read_only")
 }
 
 // SourceExists checks if a source URL has already been ingested.
 func SourceExists(ctx context.Context, sourceURL string) (bool, error) {
+	db, err := getConnection()
+	if err != nil {
+		return false, fmt.Errorf("failed to connect to database: %w", err)
+	}
+	defer db.Close()
+
 	var exists bool
-	err := DB().QueryRowContext(ctx,
+	err = db.QueryRowContext(ctx,
 		"SELECT EXISTS(SELECT 1 FROM texts WHERE source_url = ? LIMIT 1)",
 		sourceURL,
 	).Scan(&exists)
@@ -55,8 +40,14 @@ func SourceExists(ctx context.Context, sourceURL string) (bool, error) {
 
 // HashExists checks if a text hash already exists.
 func HashExists(ctx context.Context, hash string) (bool, error) {
+	db, err := getConnection()
+	if err != nil {
+		return false, fmt.Errorf("failed to connect to database: %w", err)
+	}
+	defer db.Close()
+
 	var exists bool
-	err := DB().QueryRowContext(ctx,
+	err = db.QueryRowContext(ctx,
 		"SELECT EXISTS(SELECT 1 FROM texts WHERE hash = ? LIMIT 1)",
 		hash,
 	).Scan(&exists)
@@ -69,11 +60,17 @@ func HashExists(ctx context.Context, hash string) (bool, error) {
 
 // ListTexts returns paginated texts grouped by source_url.
 func ListTexts(ctx context.Context, page, perPage int) ([]models.TextRow, int, error) {
+	db, err := getConnection()
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to connect to database: %w", err)
+	}
+	defer db.Close()
+
 	offset := (page - 1) * perPage
 
 	// Get total count of distinct source_urls
 	var total int
-	err := DB().QueryRowContext(ctx,
+	err = db.QueryRowContext(ctx,
 		"SELECT COUNT(DISTINCT source_url) FROM texts",
 	).Scan(&total)
 	if err != nil {
@@ -81,7 +78,7 @@ func ListTexts(ctx context.Context, page, perPage int) ([]models.TextRow, int, e
 	}
 
 	// Get paginated results grouped by source_url
-	rows, err := DB().QueryContext(ctx, `
+	rows, err := db.QueryContext(ctx, `
 		SELECT
 			MIN(id) as id,
 			source_url,
@@ -118,6 +115,12 @@ func ListTexts(ctx context.Context, page, perPage int) ([]models.TextRow, int, e
 
 // SearchTexts performs vector similarity search using the query embedding.
 func SearchTexts(ctx context.Context, embedding []float32, limit int) ([]models.SearchRow, error) {
+	db, err := getConnection()
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
+	}
+	defer db.Close()
+
 	// Build the embedding array literal for DuckDB
 	embeddingLiteral := floatsToArrayLiteral(embedding)
 
@@ -136,7 +139,7 @@ func SearchTexts(ctx context.Context, embedding []float32, limit int) ([]models.
 		LIMIT ?
 	`, embeddingLiteral)
 
-	rows, err := DB().QueryContext(ctx, query, limit)
+	rows, err := db.QueryContext(ctx, query, limit)
 	if err != nil {
 		return nil, err
 	}
