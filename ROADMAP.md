@@ -79,12 +79,12 @@
 
 ## Phase 5: Polish
 
-### 5.1 Error Handling — Go API
-- [ ] Add structured error logging before generic responses (`handler/*.go`)
-- [ ] Log actual errors with context (db, celery, embed, redis failures)
-- [ ] Handle JSON encoding errors in `response.go`, `router.go`
-- [ ] Add `http.MaxBytesReader` to ingest endpoint (like upload)
-- [ ] Log warning when redis URL parse fails and fallback is used
+### 5.1 Error Handling — Go API ✓
+- [x] Add structured error logging before generic responses (`handler/*.go`)
+- [x] Log actual errors with context (db, celery, embed, redis failures)
+- [x] Handle JSON encoding errors in `response.go`, `router.go`
+- [x] Add `http.MaxBytesReader` to ingest endpoint (like upload)
+- [x] Log warning when redis URL parse fails and fallback is used
 
 ### 5.2 Error Handling — Python Workers
 - [ ] Catch specific exceptions in `gutenberg.py` (ConnectionError, Timeout, HTTPError)
