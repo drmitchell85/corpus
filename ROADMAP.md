@@ -62,10 +62,10 @@
 - [x] Display metadata (title, author, source type)
 - [x] Pagination controls
 
-### 4.6 Ingestion Form (URL)
-- [ ] URL input with metadata fields (title, author, year)
-- [ ] Form validation
-- [ ] Submit to POST `/ingest` endpoint
+### 4.6 Ingestion Form (URL) ✓
+- [x] URL input with metadata fields (title, author, year)
+- [x] Form validation
+- [x] Submit to POST `/ingest` endpoint
 
 ### 4.7 PDF Upload Form
 - [ ] File input for PDF selection
