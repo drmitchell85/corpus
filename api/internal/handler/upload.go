@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -47,6 +48,39 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 			"filename", header.Filename,
 			"remote_addr", r.RemoteAddr)
 		respondFailure(w, http.StatusBadRequest, "only PDF files are accepted")
+		return
+	}
+
+	// Validate PDF magic bytes (%PDF-)
+	// Read first 5 bytes to check PDF signature
+	magicBytes := make([]byte, 5)
+	n, err := file.Read(magicBytes)
+	if err != nil || n < 5 {
+		slog.Warn("failed to read file header for validation",
+			"error", err,
+			"bytes_read", n,
+			"filename", header.Filename,
+			"remote_addr", r.RemoteAddr)
+		respondFailure(w, http.StatusBadRequest, "failed to validate file format")
+		return
+	}
+
+	// Reset file pointer to beginning after reading header
+	if _, err := file.Seek(0, 0); err != nil {
+		slog.Error("failed to reset file pointer after header check",
+			"error", err,
+			"filename", header.Filename)
+		respondFailure(w, http.StatusInternalServerError, "failed to process file")
+		return
+	}
+
+	// Check for PDF magic bytes
+	if string(magicBytes) != "%PDF-" {
+		slog.Warn("file does not have PDF magic bytes",
+			"filename", header.Filename,
+			"magic_bytes", fmt.Sprintf("%x", magicBytes),
+			"remote_addr", r.RemoteAddr)
+		respondFailure(w, http.StatusBadRequest, "file is not a valid PDF")
 		return
 	}
 
@@ -97,8 +131,22 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse optional metadata from form fields
-	metadata := parseUploadMetadata(r)
+	// Parse and validate optional metadata from form fields
+	metadata, err := parseUploadMetadata(r)
+	if err != nil {
+		slog.Warn("invalid metadata in upload request",
+			"error", err,
+			"filename", header.Filename,
+			"remote_addr", r.RemoteAddr)
+		// Clean up uploaded file since metadata validation failed
+		if rmErr := os.Remove(destPath); rmErr != nil {
+			slog.Warn("failed to clean up uploaded file after metadata validation failure",
+				"error", rmErr,
+				"path", destPath)
+		}
+		respondFailure(w, http.StatusBadRequest, err.Error())
+		return
+	}
 
 	// Convert to absolute path for worker (worker runs from different cwd)
 	absPath, err := filepath.Abs(destPath)
@@ -144,8 +192,8 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// parseUploadMetadata extracts optional metadata from form fields.
-func parseUploadMetadata(r *http.Request) *models.TaskMetadata {
+// parseUploadMetadata extracts and validates optional metadata from form fields.
+func parseUploadMetadata(r *http.Request) (*models.TaskMetadata, error) {
 	author := r.FormValue("author")
 	title := r.FormValue("title")
 	yearStr := r.FormValue("year")
@@ -153,12 +201,20 @@ func parseUploadMetadata(r *http.Request) *models.TaskMetadata {
 
 	// Return nil if no metadata provided
 	if author == "" && title == "" && yearStr == "" && genre == "" {
-		return nil
+		return nil, nil
 	}
 
 	var year int
 	if yearStr != "" {
-		year, _ = strconv.Atoi(yearStr)
+		parsedYear, err := strconv.Atoi(yearStr)
+		if err != nil {
+			return nil, &validationError{"year must be a valid integer"}
+		}
+		// Validate year range (1000-2100)
+		if parsedYear < 1000 || parsedYear > 2100 {
+			return nil, &validationError{"year must be between 1000 and 2100"}
+		}
+		year = parsedYear
 	}
 
 	return &models.TaskMetadata{
@@ -166,5 +222,5 @@ func parseUploadMetadata(r *http.Request) *models.TaskMetadata {
 		Title:  title,
 		Year:   year,
 		Genre:  genre,
-	}
+	}, nil
 }

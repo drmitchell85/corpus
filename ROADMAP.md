@@ -103,13 +103,13 @@
 - [x] Differentiate network vs server errors in `useSearch.ts`, `useTexts.ts`
 - [x] Add retry logic (3 attempts) to `JobStatusIndicator.tsx` before marking failed
 
-### 5.5 Input Validation — Go API
-- [ ] Validate URL format (parse, check http/https scheme) in `ingest.go`
-- [ ] Validate PDF magic bytes `%PDF-` not just extension in `upload.go`
-- [ ] Validate year is integer in range 1000-2100 in `upload.go`
-- [ ] Validate search query length (1-1000 chars) in `search.go`
-- [ ] Validate job_id is UUID format in `status.go`
-- [ ] Add config validation on startup (paths writable, services reachable)
+### 5.5 Input Validation — Go API ✓
+- [x] Validate URL format (parse, check http/https scheme) in `ingest.go`
+- [x] Validate PDF magic bytes `%PDF-` not just extension in `upload.go`
+- [x] Validate year is integer in range 1000-2100 in `upload.go`
+- [x] Validate search query length (1-1000 chars) in `search.go`
+- [x] Validate job_id is UUID format in `status.go`
+- [x] Add config validation on startup (paths writable, services reachable)
 
 ### 5.6 Input Validation — Frontend
 - [ ] Validate search query 3+ chars min, 500 chars max in `SearchInput.tsx`

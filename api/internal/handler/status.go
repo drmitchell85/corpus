@@ -8,6 +8,7 @@ import (
 	"corpus/api/internal/models"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
 // IngestStatus handles GET /ingest/status/{id} requests.
@@ -15,6 +16,16 @@ func IngestStatus(w http.ResponseWriter, r *http.Request) {
 	jobID := chi.URLParam(r, "id")
 	if jobID == "" {
 		respondFailure(w, http.StatusBadRequest, "job ID is required")
+		return
+	}
+
+	// Validate job ID is a valid UUID
+	if _, err := uuid.Parse(jobID); err != nil {
+		slog.Warn("invalid job ID format",
+			"job_id", jobID,
+			"error", err,
+			"remote_addr", r.RemoteAddr)
+		respondFailure(w, http.StatusBadRequest, "job ID must be a valid UUID")
 		return
 	}
 

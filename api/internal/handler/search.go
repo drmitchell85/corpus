@@ -3,6 +3,7 @@ package handler
 import (
 	"log/slog"
 	"net/http"
+	"unicode/utf8"
 
 	"corpus/api/internal/db"
 	"corpus/api/internal/embed"
@@ -12,6 +13,8 @@ import (
 const (
 	defaultSearchLimit = 10
 	maxSearchLimit     = 100
+	minQueryLength     = 1
+	maxQueryLength     = 1000
 )
 
 // Search handles GET /search requests.
@@ -21,6 +24,18 @@ func Search(w http.ResponseWriter, r *http.Request) {
 		slog.Warn("search request missing query parameter",
 			"remote_addr", r.RemoteAddr)
 		respondFailure(w, http.StatusBadRequest, "query parameter 'q' is required")
+		return
+	}
+
+	// Validate query length (character count, not byte count)
+	queryLen := utf8.RuneCountInString(query)
+	if queryLen < minQueryLength || queryLen > maxQueryLength {
+		slog.Warn("search query length out of range",
+			"query_length", queryLen,
+			"min", minQueryLength,
+			"max", maxQueryLength,
+			"remote_addr", r.RemoteAddr)
+		respondFailure(w, http.StatusBadRequest, "query must be between 1 and 1000 characters")
 		return
 	}
 
