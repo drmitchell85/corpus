@@ -1,6 +1,5 @@
 export {
   ApiError,
-  NetworkError,
   checkHealth,
   ingestUrl,
   uploadPdf,
