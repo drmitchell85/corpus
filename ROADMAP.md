@@ -87,10 +87,10 @@
 - [x] Log warning when redis URL parse fails and fallback is used
 
 ### 5.2 Error Handling — Python Workers
-- [ ] Catch specific exceptions in `gutenberg.py` (ConnectionError, Timeout, HTTPError)
-- [ ] Catch `fitz.FileDataError` for corrupt PDFs in `pdf.py`
-- [ ] Wrap model loading in try/except in `embedder.py`
-- [ ] Replace blanket retry with whitelist of retryable exceptions in `worker.py`
+- [x] Catch specific exceptions in `gutenberg.py` (ConnectionError, Timeout, HTTPError)
+- [x] Catch `fitz.FileDataError` for corrupt PDFs in `pdf.py`
+- [x] Wrap model loading in try/except in `embedder.py`
+- [x] Replace blanket retry with whitelist of retryable exceptions in `worker.py`
 
 ### 5.3 Retry Configuration — Python Workers
 - [ ] Add exponential backoff to Celery task (`retry_backoff=True`, `retry_jitter=True`)

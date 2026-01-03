@@ -2,14 +2,49 @@
 
 import re
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 
-def fetch_gutenberg_text(url: str, timeout: int = 30) -> str:
+def _get_retry_session() -> requests.Session:
+    """Create a requests session with automatic retry logic.
+
+    Retry strategy:
+    - 3 retries total (4 attempts including initial request)
+    - Exponential backoff: {backoff factor} * (2 ^ {retry number}) seconds
+    - Retry on network errors and specific HTTP status codes
+    - Backoff factor: 1 second (waits: 0s, 2s, 4s for retries 0, 1, 2)
+
+    Returns:
+        Configured requests Session with retry adapter
+    """
+    retry_strategy = Retry(
+        total=3,  # Total number of retries
+        backoff_factor=1,  # Wait 1s, 2s, 4s between retries
+        status_forcelist=[408, 429, 500, 502, 503, 504],  # Retry these HTTP codes
+        allowed_methods=["GET"],  # Only retry GET requests
+        raise_on_status=False,  # Let retries complete; we call raise_for_status() after
+    )
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    session = requests.Session()
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    return session
+
+
+def fetch_gutenberg_text(url: str, timeout: tuple[float, float | None] = (5, 30)) -> str:
     """Fetch text content from a Project Gutenberg URL.
+
+    HTTP-level retries: 3 attempts with exponential backoff for network/server errors
+    (408, 429, 500, 502, 503, 504). This handles transient issues at the HTTP layer
+    before the Celery task-level retry kicks in.
 
     Args:
         url: URL to a Gutenberg plain text file
-        timeout: Request timeout in seconds
+        timeout: Tuple of (connect_timeout, read_timeout) in seconds.
+                 Supports sub-second precision (e.g., 0.5) and None for infinite read.
+                 Default (5, 30) fails fast on connection issues but allows
+                 slow downloads of large texts.
 
     Returns:
         Raw text content from the URL
@@ -20,8 +55,9 @@ def fetch_gutenberg_text(url: str, timeout: int = 30) -> str:
         requests.HTTPError: If server returns error status (may be retryable)
         ValueError: If URL is invalid (not retryable)
     """
+    session = _get_retry_session()
     try:
-        response = requests.get(url, timeout=timeout)
+        response = session.get(url, timeout=timeout)
         response.raise_for_status()
         return response.text
     except requests.exceptions.MissingSchema as exc:
@@ -31,6 +67,8 @@ def fetch_gutenberg_text(url: str, timeout: int = 30) -> str:
         # Malformed URL
         raise ValueError(f"Malformed URL: {url}") from exc
     # Let ConnectionError, Timeout, HTTPError propagate naturally
+    finally:
+        session.close()
 
 
 def strip_gutenberg_boilerplate(text: str) -> str:
