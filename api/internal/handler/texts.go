@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"corpus/api/internal/db"
+	appMiddleware "corpus/api/internal/middleware"
 	"corpus/api/internal/models"
 )
 
@@ -17,8 +18,14 @@ const (
 
 // ListTexts handles GET /texts requests.
 func ListTexts(w http.ResponseWriter, r *http.Request) {
+	reqID := appMiddleware.GetRequestID(r.Context())
 	page := parseIntParam(r, "page", defaultPage)
 	perPage := parseIntParam(r, "per_page", defaultPerPage)
+
+	slog.Debug("list texts request received",
+		"request_id", reqID,
+		"page", page,
+		"per_page", perPage)
 
 	if page < 1 {
 		page = defaultPage
@@ -33,6 +40,7 @@ func ListTexts(w http.ResponseWriter, r *http.Request) {
 	rows, total, err := db.ListTexts(r.Context(), page, perPage)
 	if err != nil {
 		slog.Error("database error listing texts",
+			"request_id", reqID,
 			"error", err,
 			"page", page,
 			"per_page", perPage,
@@ -41,7 +49,8 @@ func ListTexts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Info("texts listed",
+	slog.Debug("texts listed successfully",
+		"request_id", reqID,
 		"page", page,
 		"per_page", perPage,
 		"total", total)

@@ -117,12 +117,12 @@
 - [x] Validate year is integer with `Number.isInteger()` in forms
 - [x] Validate MIME type `application/pdf` not just extension in `UploadPage.tsx`
 
-### 5.7 Logging — Go API
-- [ ] Add `log/slog` structured logging infrastructure
-- [ ] Log startup config (port, db path, embed URL, redis URL sanitized)
-- [ ] Add request logging middleware (request ID, method, path, status, duration)
-- [ ] Log incoming requests with params in handlers
-- [ ] Log operation outcomes and timing for external calls
+### 5.7 Logging — Go API ✓
+- [x] Add `log/slog` structured logging infrastructure
+- [x] Log startup config (port, db path, embed URL, redis URL sanitized)
+- [x] Add request logging middleware (request ID, method, path, status, duration)
+- [x] Log incoming requests with params in handlers
+- [x] Log operation outcomes and timing for external calls
 
 ### 5.8 Logging — Python Workers
 - [ ] Add structured logging setup in `__init__.py` (JSON format, task_id propagation)

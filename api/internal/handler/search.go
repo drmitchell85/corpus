@@ -7,6 +7,7 @@ import (
 
 	"corpus/api/internal/db"
 	"corpus/api/internal/embed"
+	appMiddleware "corpus/api/internal/middleware"
 	"corpus/api/internal/models"
 )
 
@@ -19,9 +20,18 @@ const (
 
 // Search handles GET /search requests.
 func Search(w http.ResponseWriter, r *http.Request) {
+	reqID := appMiddleware.GetRequestID(r.Context())
 	query := r.URL.Query().Get("q")
+	limit := parseIntParam(r, "limit", defaultSearchLimit)
+
+	slog.Debug("search request received",
+		"request_id", reqID,
+		"query_length", len(query),
+		"limit", limit)
+
 	if query == "" {
 		slog.Warn("search request missing query parameter",
+			"request_id", reqID,
 			"remote_addr", r.RemoteAddr)
 		respondFailure(w, http.StatusBadRequest, "query parameter 'q' is required")
 		return
@@ -31,6 +41,7 @@ func Search(w http.ResponseWriter, r *http.Request) {
 	queryLen := utf8.RuneCountInString(query)
 	if queryLen < minQueryLength || queryLen > maxQueryLength {
 		slog.Warn("search query length out of range",
+			"request_id", reqID,
 			"query_length", queryLen,
 			"min", minQueryLength,
 			"max", maxQueryLength,
@@ -39,7 +50,6 @@ func Search(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	limit := parseIntParam(r, "limit", defaultSearchLimit)
 	if limit < 1 {
 		limit = defaultSearchLimit
 	}
@@ -51,8 +61,9 @@ func Search(w http.ResponseWriter, r *http.Request) {
 	embedding, err := embed.GetEmbedding(r.Context(), query)
 	if err != nil {
 		slog.Error("embedding service error",
+			"request_id", reqID,
 			"error", err,
-			"query", query,
+			"query_length", len(query),
 			"operation", "GetEmbedding")
 		respondFailure(w, http.StatusServiceUnavailable, "embedding service unavailable")
 		return
@@ -62,8 +73,9 @@ func Search(w http.ResponseWriter, r *http.Request) {
 	rows, err := db.SearchTexts(r.Context(), embedding, limit)
 	if err != nil {
 		slog.Error("database search error",
+			"request_id", reqID,
 			"error", err,
-			"query", query,
+			"query_length", len(query),
 			"limit", limit,
 			"operation", "SearchTexts")
 		respondFailure(w, http.StatusInternalServerError, "search failed")
@@ -85,7 +97,8 @@ func Search(w http.ResponseWriter, r *http.Request) {
 	}
 
 	slog.Info("search completed",
-		"query", query,
+		"request_id", reqID,
+		"query_length", len(query),
 		"result_count", len(results),
 		"limit", limit)
 

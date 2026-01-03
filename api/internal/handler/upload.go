@@ -12,6 +12,7 @@ import (
 
 	"corpus/api/internal/celery"
 	"corpus/api/internal/config"
+	appMiddleware "corpus/api/internal/middleware"
 	"corpus/api/internal/models"
 
 	"github.com/google/uuid"
@@ -19,12 +20,15 @@ import (
 
 // Upload handles POST /upload requests for PDF files.
 func Upload(w http.ResponseWriter, r *http.Request) {
+	reqID := appMiddleware.GetRequestID(r.Context())
+
 	// Limit request body size
 	r.Body = http.MaxBytesReader(w, r.Body, maxUploadSize)
 
 	// Parse multipart form (max 10MB in memory, rest goes to temp files)
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
 		slog.Error("failed to parse multipart form",
+			"request_id", reqID,
 			"error", err,
 			"remote_addr", r.RemoteAddr)
 		respondFailure(w, http.StatusBadRequest, "file too large or invalid form data")
@@ -35,6 +39,7 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 	file, header, err := r.FormFile("file")
 	if err != nil {
 		slog.Warn("missing file field in upload request",
+			"request_id", reqID,
 			"error", err,
 			"remote_addr", r.RemoteAddr)
 		respondFailure(w, http.StatusBadRequest, "file field is required")
@@ -42,9 +47,16 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
+	slog.Debug("upload request received",
+		"request_id", reqID,
+		"filename", header.Filename,
+		"size_bytes", header.Size,
+		"content_type", header.Header.Get("Content-Type"))
+
 	// Validate file extension
 	if !strings.HasSuffix(strings.ToLower(header.Filename), ".pdf") {
 		slog.Warn("non-PDF file upload rejected",
+			"request_id", reqID,
 			"filename", header.Filename,
 			"remote_addr", r.RemoteAddr)
 		respondFailure(w, http.StatusBadRequest, "only PDF files are accepted")
@@ -57,6 +69,7 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 	n, err := file.Read(magicBytes)
 	if err != nil || n < 5 {
 		slog.Warn("failed to read file header for validation",
+			"request_id", reqID,
 			"error", err,
 			"bytes_read", n,
 			"filename", header.Filename,
@@ -68,6 +81,7 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 	// Reset file pointer to beginning after reading header
 	if _, err := file.Seek(0, 0); err != nil {
 		slog.Error("failed to reset file pointer after header check",
+			"request_id", reqID,
 			"error", err,
 			"filename", header.Filename)
 		respondFailure(w, http.StatusInternalServerError, "failed to process file")
@@ -77,6 +91,7 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 	// Check for PDF magic bytes
 	if string(magicBytes) != "%PDF-" {
 		slog.Warn("file does not have PDF magic bytes",
+			"request_id", reqID,
 			"filename", header.Filename,
 			"magic_bytes", fmt.Sprintf("%x", magicBytes),
 			"remote_addr", r.RemoteAddr)
@@ -87,6 +102,7 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 	// Ensure upload directory exists
 	if err := os.MkdirAll(config.UploadPath, 0755); err != nil {
 		slog.Error("failed to create upload directory",
+			"request_id", reqID,
 			"error", err,
 			"path", config.UploadPath)
 		respondFailure(w, http.StatusInternalServerError, "failed to create upload directory")
@@ -102,6 +118,7 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 	dest, err := os.Create(destPath)
 	if err != nil {
 		slog.Error("failed to create destination file",
+			"request_id", reqID,
 			"error", err,
 			"path", destPath,
 			"filename", header.Filename)
@@ -111,6 +128,7 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if err := dest.Close(); err != nil {
 			slog.Error("failed to close destination file",
+				"request_id", reqID,
 				"error", err,
 				"path", destPath)
 		}
@@ -119,11 +137,13 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 	// Copy uploaded file to destination
 	if _, err := io.Copy(dest, file); err != nil {
 		slog.Error("failed to copy uploaded file",
+			"request_id", reqID,
 			"error", err,
 			"path", destPath,
 			"filename", header.Filename)
 		if err := os.Remove(destPath); err != nil {
 			slog.Warn("failed to clean up uploaded file after copy failure",
+				"request_id", reqID,
 				"error", err,
 				"path", destPath)
 		}
@@ -135,12 +155,14 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 	metadata, err := parseUploadMetadata(r)
 	if err != nil {
 		slog.Warn("invalid metadata in upload request",
+			"request_id", reqID,
 			"error", err,
 			"filename", header.Filename,
 			"remote_addr", r.RemoteAddr)
 		// Clean up uploaded file since metadata validation failed
 		if rmErr := os.Remove(destPath); rmErr != nil {
 			slog.Warn("failed to clean up uploaded file after metadata validation failure",
+				"request_id", reqID,
 				"error", rmErr,
 				"path", destPath)
 		}
@@ -152,10 +174,12 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 	absPath, err := filepath.Abs(destPath)
 	if err != nil {
 		slog.Error("failed to resolve absolute path",
+			"request_id", reqID,
 			"error", err,
 			"path", destPath)
 		if err := os.Remove(destPath); err != nil {
 			slog.Warn("failed to clean up uploaded file after path resolution failure",
+				"request_id", reqID,
 				"error", err,
 				"path", destPath)
 		}
@@ -167,11 +191,13 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 	result, err := celery.QueuePDFJob(r.Context(), absPath, metadata)
 	if err != nil {
 		slog.Error("failed to queue PDF job",
+			"request_id", reqID,
 			"error", err,
 			"path", absPath,
 			"filename", header.Filename)
 		if err := os.Remove(destPath); err != nil {
 			slog.Warn("failed to clean up uploaded file after queue failure",
+				"request_id", reqID,
 				"error", err,
 				"path", destPath)
 		}
@@ -180,6 +206,7 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	slog.Info("PDF upload job queued",
+		"request_id", reqID,
 		"job_id", result.JobID,
 		"filename", header.Filename,
 		"path", absPath)
