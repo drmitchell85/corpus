@@ -28,6 +28,9 @@ export function useTexts(
     perPage: defaultPerPage,
   });
 
+  // Unmount guard to prevent state updates after component unmounts
+  const mountedRef = useRef(true);
+
   const fetchTexts = useCallback(
     async (page: number, perPage: number) => {
       setState((prev) => ({

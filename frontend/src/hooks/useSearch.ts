@@ -22,6 +22,14 @@ export function useSearch(): UseSearchReturn {
     hasSearched: false,
   });
 
+  // Unmount guard to prevent state updates after component unmounts
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   const search = useCallback(async (query: string, limit: number = 10) => {
     setState((prev) => ({
       ...prev,
