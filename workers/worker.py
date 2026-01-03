@@ -2,6 +2,7 @@
 
 import logging
 import os
+import time
 import requests
 
 from celery.exceptions import SoftTimeLimitExceeded
@@ -93,24 +94,67 @@ def process_text(self, job_id: str, source_type: str, source_url: str = None,
         dict: Job result with status and details
     """
     metadata = metadata or {}
+    task_start = time.time()
+
+    logger.info(
+        "Task started",
+        extra={
+            "job_id": job_id,
+            "source_type": source_type,
+            "source_url": source_url,
+            "pdf_path": pdf_path,
+            "metadata": metadata,
+        }
+    )
 
     try:
         # Step 1: Fetch/extract text
+        fetch_start = time.time()
         if source_type == "gutenberg":
             if not source_url:
                 raise ValueError("source_url required for gutenberg source_type")
+            logger.debug(
+                "Fetching Gutenberg text",
+                extra={"job_id": job_id, "source_url": source_url}
+            )
             text = fetch_and_clean(source_url)
         elif source_type == "pdf":
             if not pdf_path:
                 raise ValueError("pdf_path required for pdf source_type")
+            logger.debug(
+                "Extracting PDF text",
+                extra={"job_id": job_id, "pdf_path": pdf_path}
+            )
             text = extract_pdf(pdf_path)  # extract_pdf handles file validation
         else:
             raise ValueError(f"Unknown source_type: {source_type}")
 
+        fetch_duration_ms = int((time.time() - fetch_start) * 1000)
+        logger.info(
+            "Text fetched successfully",
+            extra={
+                "job_id": job_id,
+                "source_type": source_type,
+                "text_length": len(text),
+                "duration_ms": fetch_duration_ms,
+            }
+        )
+
         # Step 2: Chunk text
+        chunk_start = time.time()
+        logger.debug("Chunking text", extra={"job_id": job_id, "text_length": len(text)})
         chunks = chunk_text(text)
+        chunk_duration_ms = int((time.time() - chunk_start) * 1000)
 
         if not chunks:
+            logger.warning(
+                "No chunks produced from text",
+                extra={
+                    "job_id": job_id,
+                    "text_length": len(text),
+                    "duration_ms": chunk_duration_ms,
+                }
+            )
             return {
                 "job_id": job_id,
                 "status": "completed",
@@ -119,10 +163,32 @@ def process_text(self, job_id: str, source_type: str, source_url: str = None,
                 "message": "No chunks produced from text",
             }
 
+        logger.info(
+            "Text chunked successfully",
+            extra={
+                "job_id": job_id,
+                "chunk_count": len(chunks),
+                "duration_ms": chunk_duration_ms,
+            }
+        )
+
         # Step 3: Embed chunks
+        embed_start = time.time()
+        logger.debug("Embedding chunks", extra={"job_id": job_id, "chunk_count": len(chunks)})
         embeddings = embed_chunks(chunks)
+        embed_duration_ms = int((time.time() - embed_start) * 1000)
+        logger.info(
+            "Chunks embedded successfully",
+            extra={
+                "job_id": job_id,
+                "chunk_count": len(chunks),
+                "duration_ms": embed_duration_ms,
+            }
+        )
 
         # Step 4: Store in DuckDB
+        store_start = time.time()
+        logger.debug("Storing chunks in database", extra={"job_id": job_id, "chunk_count": len(chunks)})
         result = store_chunks(
             chunks=chunks,
             embeddings=embeddings,
@@ -131,6 +197,21 @@ def process_text(self, job_id: str, source_type: str, source_url: str = None,
             title=metadata.get("title"),
             year=metadata.get("year"),
             genre=metadata.get("genre"),
+            job_id=job_id,
+        )
+        store_duration_ms = int((time.time() - store_start) * 1000)
+
+        task_duration_ms = int((time.time() - task_start) * 1000)
+        logger.info(
+            "Task completed successfully",
+            extra={
+                "job_id": job_id,
+                "source_type": source_type,
+                "chunks_stored": result.stored,
+                "chunks_skipped": result.skipped,
+                "store_duration_ms": store_duration_ms,
+                "total_duration_ms": task_duration_ms,
+            }
         )
 
         return {
@@ -142,17 +223,46 @@ def process_text(self, job_id: str, source_type: str, source_url: str = None,
             "chunks_skipped": result.skipped,
         }
 
-    except (ValueError, FileNotFoundError, RuntimeError):
-        # Permanent failures - don't retry:
+    except (ValueError, FileNotFoundError) as exc:
+        # Permanent validation failures - don't retry:
         # - ValueError: Invalid URL, corrupt PDF, bad input
         # - FileNotFoundError: Missing PDF file
-        # - RuntimeError: Model loading failure
+        logger.error(
+            "Task failed with validation error",
+            extra={
+                "job_id": job_id,
+                "error_type": type(exc).__name__,
+                "error": str(exc),
+            }
+        )
+        raise
+
+    except RuntimeError as exc:
+        # Model loading or system failures - include stack trace
+        logger.error(
+            "Task failed with runtime error",
+            extra={
+                "job_id": job_id,
+                "error_type": type(exc).__name__,
+                "error": str(exc),
+            },
+            exc_info=True
+        )
         raise
 
     except (requests.exceptions.ConnectionError,
             requests.exceptions.Timeout) as exc:
         # Transient network failures - retry these
         # Note: ConnectTimeout inherits from both ConnectionError and Timeout
+        logger.warning(
+            "Task failed with network error, retrying",
+            extra={
+                "job_id": job_id,
+                "error_type": type(exc).__name__,
+                "error": str(exc),
+                "retry_count": self.request.retries,
+            }
+        )
         raise self.retry(exc=exc)
 
     except requests.exceptions.HTTPError as exc:
@@ -160,28 +270,73 @@ def process_text(self, job_id: str, source_type: str, source_url: str = None,
         if exc.response is not None:
             status = exc.response.status_code
             if status >= 500 or status in (408, 429):
+                logger.warning(
+                    "Task failed with retryable HTTP error, retrying",
+                    extra={
+                        "job_id": job_id,
+                        "status_code": status,
+                        "error": str(exc),
+                        "retry_count": self.request.retries,
+                    }
+                )
                 raise self.retry(exc=exc)
         # Other 4xx client errors are permanent - don't retry
+        logger.error(
+            "Task failed with non-retryable HTTP error",
+            extra={
+                "job_id": job_id,
+                "status_code": exc.response.status_code if exc.response else None,
+                "error": str(exc),
+            },
+            exc_info=True
+        )
         raise
 
     except requests.exceptions.TooManyRedirects as exc:
         # Redirect loop - permanent configuration issue, don't retry
-        logger.warning(f"Redirect loop detected for job {job_id}: {exc}")
+        logger.error(
+            "Task failed with redirect loop",
+            extra={"job_id": job_id, "error": str(exc)},
+            exc_info=True
+        )
         raise
 
     except requests.exceptions.RequestException as exc:
         # Catch any other requests exceptions not explicitly handled above
         # (ChunkedEncodingError, ContentDecodingError, etc.)
-        logger.warning(f"Unhandled requests exception in job {job_id}: {exc}")
+        logger.warning(
+            "Task failed with unknown requests error, retrying",
+            extra={
+                "job_id": job_id,
+                "error_type": type(exc).__name__,
+                "error": str(exc),
+                "retry_count": self.request.retries,
+            }
+        )
         raise self.retry(exc=exc)
 
     except SoftTimeLimitExceeded as exc:
         # Task exceeded soft timeout (540s) - retry to allow completion
         # Hard timeout (600s) will kill the task if soft timeout retry also fails
-        logger.warning(f"Job {job_id} exceeded soft time limit (540s), retrying...")
+        logger.warning(
+            "Task exceeded soft time limit, retrying",
+            extra={
+                "job_id": job_id,
+                "soft_limit_seconds": 540,
+                "retry_count": self.request.retries,
+            }
+        )
         raise self.retry(exc=exc)
 
     except Exception as exc:
         # Unknown exceptions - log and don't retry to avoid infinite loops
-        logger.error(f"Unexpected error in job {job_id}: {exc}", exc_info=True)
+        logger.error(
+            "Task failed with unexpected error",
+            extra={
+                "job_id": job_id,
+                "error_type": type(exc).__name__,
+                "error": str(exc),
+            },
+            exc_info=True
+        )
         raise

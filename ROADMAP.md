@@ -124,10 +124,10 @@
 - [x] Log incoming requests with params in handlers
 - [x] Log operation outcomes and timing for external calls
 
-### 5.8 Logging — Python Workers
-- [ ] Add structured logging setup in `__init__.py` (JSON format, task_id propagation)
-- [ ] Log task lifecycle in `worker.py` (start, fetch, chunk, embed, store, retry)
-- [ ] Log network operations in `gutenberg.py` (URL, response size, time)
-- [ ] Log PDF extraction in `pdf.py` (file path, page count, time)
-- [ ] Log embeddings in `embedder.py` (model load, batch size, throughput)
-- [ ] Log database operations in `db.py` (transactions, stored/skipped counts)
+### 5.8 Logging — Python Workers ✓
+- [x] Add structured logging setup in `__init__.py` (JSON format, task_id propagation)
+- [x] Log task lifecycle in `worker.py` (start, fetch, chunk, embed, store, retry)
+- [x] Log network operations in `gutenberg.py` (URL, response size, time)
+- [x] Log PDF extraction in `pdf.py` (file path, page count, time)
+- [x] Log embeddings in `embedder.py` (model load, batch size, throughput)
+- [x] Log database operations in `db.py` (transactions, stored/skipped counts)
