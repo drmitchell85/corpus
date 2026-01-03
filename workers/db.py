@@ -1,7 +1,9 @@
 """DuckDB schema and database utilities."""
 
 import hashlib
+import logging
 import os
+import time
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
@@ -10,6 +12,8 @@ from typing import Generator
 import duckdb
 import numpy as np
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 # Load .env from project root
 load_dotenv(Path(__file__).parent.parent / ".env")
@@ -154,6 +158,7 @@ def store_chunks(
     title: str = None,
     year: int = None,
     genre: str = None,
+    job_id: str = None,
 ) -> StoreResult:
     """Store multiple text chunks with their embeddings.
 
@@ -176,22 +181,74 @@ def store_chunks(
         DatabaseError: If the transaction fails
     """
     if len(chunks) != len(embeddings):
+        logger.error(
+            "Chunk and embedding count mismatch",
+            extra={
+                "job_id": job_id,
+                "chunk_count": len(chunks),
+                "embedding_count": len(embeddings),
+            }
+        )
         raise ValueError("chunks and embeddings must have same length")
+
+    start_time = time.time()
+    logger.debug(
+        "Starting database transaction",
+        extra={
+            "job_id": job_id,
+            "chunk_count": len(chunks),
+            "source_url": source_url,
+            "author": author,
+            "title": title,
+            "year": year,
+            "genre": genre,
+        }
+    )
 
     with get_connection() as conn:
         try:
             conn.execute("BEGIN TRANSACTION")
             stored = 0
+            skipped = 0
 
             for text, embedding in zip(chunks, embeddings):
                 if insert_chunk(conn, text, embedding, source_url, author, title, year, genre):
                     stored += 1
+                else:
+                    skipped += 1
 
             conn.execute("COMMIT")
-            return StoreResult(stored=stored, skipped=len(chunks) - stored)
+            duration_ms = int((time.time() - start_time) * 1000)
+
+            logger.info(
+                "Database transaction completed",
+                extra={
+                    "job_id": job_id,
+                    "total_chunks": len(chunks),
+                    "stored": stored,
+                    "skipped": skipped,
+                    "source_url": source_url,
+                    "duration_ms": duration_ms,
+                }
+            )
+
+            return StoreResult(stored=stored, skipped=skipped)
 
         except Exception as e:
             conn.execute("ROLLBACK")
+            duration_ms = int((time.time() - start_time) * 1000)
+
+            logger.error(
+                "Database transaction failed",
+                extra={
+                    "job_id": job_id,
+                    "chunk_count": len(chunks),
+                    "source_url": source_url,
+                    "error": str(e),
+                    "duration_ms": duration_ms,
+                },
+                exc_info=True
+            )
             raise DatabaseError(f"Failed to store chunks: {e}") from e
 
 

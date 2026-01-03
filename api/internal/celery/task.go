@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"corpus/api/internal/redis"
 
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 )
 
 const (
@@ -39,16 +41,38 @@ func QueuePDFJob(ctx context.Context, pdfPath string, metadata *models.TaskMetad
 
 // QueueJob queues a text processing job for Celery workers.
 func QueueJob(ctx context.Context, sourceType, sourceURL, pdfPath string, metadata *models.TaskMetadata) (*QueueResult, error) {
+	start := time.Now()
 	jobID := generateJobID()
+
+	slog.Debug("building celery task message",
+		"job_id", jobID,
+		"source_type", sourceType,
+		"has_metadata", metadata != nil)
 
 	msg, err := buildMessage(jobID, sourceType, sourceURL, pdfPath, metadata)
 	if err != nil {
+		slog.Error("failed to build celery message",
+			"job_id", jobID,
+			"error", err,
+			"duration_ms", time.Since(start).Milliseconds())
 		return nil, fmt.Errorf("build message: %w", err)
 	}
 
 	if err := pushToQueue(ctx, msg); err != nil {
+		slog.Error("failed to push job to celery queue",
+			"job_id", jobID,
+			"queue", DefaultQueue,
+			"error", err,
+			"duration_ms", time.Since(start).Milliseconds())
 		return nil, fmt.Errorf("push to queue: %w", err)
 	}
+
+	duration := time.Since(start)
+	slog.Info("job queued to celery",
+		"job_id", jobID,
+		"source_type", sourceType,
+		"queue", DefaultQueue,
+		"duration_ms", duration.Milliseconds())
 
 	return &QueueResult{JobID: jobID}, nil
 }
@@ -152,19 +176,40 @@ func pushToQueue(ctx context.Context, message []byte) error {
 
 // GetJobStatus retrieves the status of a job from Celery's result backend.
 func GetJobStatus(ctx context.Context, jobID string) (string, error) {
+	start := time.Now()
 	key := fmt.Sprintf("celery-task-meta-%s", jobID)
 
 	result, err := redis.Client().Get(ctx, key).Result()
 	if err != nil {
-		return "PENDING", nil // No result yet means pending
+		if err == goredis.Nil {
+			slog.Debug("job status pending (no result in redis yet)",
+				"job_id", jobID,
+				"duration_ms", time.Since(start).Milliseconds())
+			return "PENDING", nil // No result yet means pending
+		}
+		slog.Error("failed to get job status from redis",
+			"job_id", jobID,
+			"key", key,
+			"error", err,
+			"duration_ms", time.Since(start).Milliseconds())
+		return "", fmt.Errorf("get job status: %w", err)
 	}
 
 	var taskResult struct {
 		Status string `json:"status"`
 	}
 	if err := json.Unmarshal([]byte(result), &taskResult); err != nil {
+		slog.Error("failed to parse job status result",
+			"job_id", jobID,
+			"error", err,
+			"duration_ms", time.Since(start).Milliseconds())
 		return "", fmt.Errorf("parse result: %w", err)
 	}
+
+	slog.Debug("job status retrieved",
+		"job_id", jobID,
+		"status", taskResult.Status,
+		"duration_ms", time.Since(start).Milliseconds())
 
 	return taskResult.Status, nil
 }
@@ -175,7 +220,10 @@ func GetJobResult(ctx context.Context, jobID string) (map[string]any, error) {
 
 	result, err := redis.Client().Get(ctx, key).Result()
 	if err != nil {
-		return nil, nil // No result yet
+		if err == goredis.Nil {
+			return nil, nil // No result yet
+		}
+		return nil, fmt.Errorf("get job result: %w", err)
 	}
 
 	var taskResult map[string]any

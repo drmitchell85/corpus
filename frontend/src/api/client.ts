@@ -29,17 +29,54 @@ export class ApiError extends Error {
   }
 }
 
+export class NetworkError extends Error {
+  constructor(message: string, cause?: unknown) {
+    super(message);
+    this.name = 'NetworkError';
+    this.cause = cause;
+  }
+}
+
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     let body: ErrorResponse | undefined;
     try {
       body = await response.json();
-    } catch {
-      // Response body wasn't JSON
+    } catch (err) {
+      // Response body wasn't JSON - log in development
+      if (import.meta.env.DEV) {
+        console.warn('Failed to parse error response as JSON:', err);
+      }
     }
     throw new ApiError(response.status, response.statusText, body);
   }
-  return response.json();
+
+  // Handle 204 No Content explicitly (no body expected)
+  if (response.status === 204) {
+    // 204 responses should not have a body - return empty object
+    // This is safe for the current API which doesn't use 204
+    return undefined as T;
+  }
+
+  // Parse response body
+  const text = await response.text();
+  if (!text) {
+    // Empty body on non-204 success response - unexpected but handle gracefully
+    if (import.meta.env.DEV) {
+      console.warn(`Unexpected empty response body for ${response.status} ${response.url}`);
+    }
+    throw new Error('Empty response body from server');
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    // Response body wasn't valid JSON
+    if (import.meta.env.DEV) {
+      console.warn('Failed to parse success response as JSON:', err);
+    }
+    throw new Error('Invalid JSON response from server');
+  }
 }
 
 // ============================================================================
@@ -50,20 +87,36 @@ async function handleResponse<T>(response: Response): Promise<T> {
  * Health check endpoint
  */
 export async function checkHealth(): Promise<HealthResponse> {
-  const response = await fetch(`${API_BASE}/health`);
-  return handleResponse<HealthResponse>(response);
+  try {
+    const response = await fetch(`${API_BASE}/health`);
+    return handleResponse<HealthResponse>(response);
+  } catch (err) {
+    // If handleResponse threw ApiError, re-throw it
+    if (err instanceof ApiError) {
+      throw err;
+    }
+    // Otherwise it's a network error (DNS, connection refused, timeout, etc.)
+    throw new NetworkError('Network request failed. Check your connection.', err);
+  }
 }
 
 /**
  * Ingest a text from a URL (Gutenberg, etc.)
  */
 export async function ingestUrl(request: IngestRequest): Promise<IngestResponse> {
-  const response = await fetch(`${API_BASE}/ingest`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(request),
-  });
-  return handleResponse<IngestResponse>(response);
+  try {
+    const response = await fetch(`${API_BASE}/ingest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    });
+    return handleResponse<IngestResponse>(response);
+  } catch (err) {
+    if (err instanceof ApiError) {
+      throw err;
+    }
+    throw new NetworkError('Network request failed. Check your connection.', err);
+  }
 }
 
 /**
@@ -73,27 +126,41 @@ export async function uploadPdf(
   file: File,
   metadata?: { author?: string; title?: string; year?: number; genre?: string }
 ): Promise<UploadResponse> {
-  const formData = new FormData();
-  formData.append('file', file);
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
 
-  if (metadata?.author) formData.append('author', metadata.author);
-  if (metadata?.title) formData.append('title', metadata.title);
-  if (metadata?.year) formData.append('year', metadata.year.toString());
-  if (metadata?.genre) formData.append('genre', metadata.genre);
+    if (metadata?.author) formData.append('author', metadata.author);
+    if (metadata?.title) formData.append('title', metadata.title);
+    if (metadata?.year) formData.append('year', metadata.year.toString());
+    if (metadata?.genre) formData.append('genre', metadata.genre);
 
-  const response = await fetch(`${API_BASE}/upload`, {
-    method: 'POST',
-    body: formData,
-  });
-  return handleResponse<UploadResponse>(response);
+    const response = await fetch(`${API_BASE}/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+    return handleResponse<UploadResponse>(response);
+  } catch (err) {
+    if (err instanceof ApiError) {
+      throw err;
+    }
+    throw new NetworkError('Network request failed. Check your connection.', err);
+  }
 }
 
 /**
  * Check the status of an ingest job
  */
 export async function getJobStatus(jobId: string): Promise<StatusResponse> {
-  const response = await fetch(`${API_BASE}/ingest/status/${encodeURIComponent(jobId)}`);
-  return handleResponse<StatusResponse>(response);
+  try {
+    const response = await fetch(`${API_BASE}/ingest/status/${encodeURIComponent(jobId)}`);
+    return handleResponse<StatusResponse>(response);
+  } catch (err) {
+    if (err instanceof ApiError) {
+      throw err;
+    }
+    throw new NetworkError('Network request failed. Check your connection.', err);
+  }
 }
 
 /**
@@ -103,12 +170,19 @@ export async function listTexts(
   page: number = 1,
   perPage: number = 20
 ): Promise<TextListResponse> {
-  const params = new URLSearchParams({
-    page: page.toString(),
-    per_page: perPage.toString(),
-  });
-  const response = await fetch(`${API_BASE}/texts?${params}`);
-  return handleResponse<TextListResponse>(response);
+  try {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      per_page: perPage.toString(),
+    });
+    const response = await fetch(`${API_BASE}/texts?${params}`);
+    return handleResponse<TextListResponse>(response);
+  } catch (err) {
+    if (err instanceof ApiError) {
+      throw err;
+    }
+    throw new NetworkError('Network request failed. Check your connection.', err);
+  }
 }
 
 /**
@@ -118,10 +192,17 @@ export async function searchTexts(
   query: string,
   limit: number = 10
 ): Promise<SearchResponse> {
-  const params = new URLSearchParams({
-    q: query,
-    limit: limit.toString(),
-  });
-  const response = await fetch(`${API_BASE}/search?${params}`);
-  return handleResponse<SearchResponse>(response);
+  try {
+    const params = new URLSearchParams({
+      q: query,
+      limit: limit.toString(),
+    });
+    const response = await fetch(`${API_BASE}/search?${params}`);
+    return handleResponse<SearchResponse>(response);
+  } catch (err) {
+    if (err instanceof ApiError) {
+      throw err;
+    }
+    throw new NetworkError('Network request failed. Check your connection.', err);
+  }
 }

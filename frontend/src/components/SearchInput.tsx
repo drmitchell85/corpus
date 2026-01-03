@@ -7,6 +7,9 @@ export interface SearchInputProps {
   initialValue?: string;
 }
 
+const MIN_QUERY_LENGTH = 3;
+const MAX_QUERY_LENGTH = 500;
+
 export function SearchInput({
   onSearch,
   isLoading = false,
@@ -14,18 +17,36 @@ export function SearchInput({
   initialValue = '',
 }: SearchInputProps) {
   const [query, setQuery] = useState(initialValue);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const trimmed = query.trim();
-    if (trimmed) {
-      onSearch(trimmed);
+
+    // Validate query length
+    if (trimmed.length < MIN_QUERY_LENGTH) {
+      setError(`Search query must be at least ${MIN_QUERY_LENGTH} characters`);
+      return;
     }
+    if (trimmed.length > MAX_QUERY_LENGTH) {
+      setError(`Search query must not exceed ${MAX_QUERY_LENGTH} characters`);
+      return;
+    }
+
+    setError(null);
+    onSearch(trimmed);
   };
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value);
+    // Clear error when user starts typing
+    if (error) {
+      setError(null);
+    }
   };
+
+  const trimmedLength = query.trim().length;
+  const isQueryValid = trimmedLength >= MIN_QUERY_LENGTH && trimmedLength <= MAX_QUERY_LENGTH;
 
   return (
     <form onSubmit={handleSubmit} className="search-form">
@@ -40,20 +61,29 @@ export function SearchInput({
           onChange={handleChange}
           placeholder={placeholder}
           disabled={isLoading}
-          aria-describedby="search-help"
+          aria-describedby={error ? 'search-error' : 'search-help'}
+          aria-invalid={!!error}
           className="search-form__input"
         />
         <button
           type="submit"
-          disabled={isLoading || !query.trim()}
+          disabled={isLoading || !isQueryValid}
+          aria-busy={isLoading}
           className="search-form__button"
         >
           {isLoading ? 'Searching' : 'Search'}
         </button>
       </div>
-      <p id="search-help" className="form-help">
-        Search finds passages semantically similar to your query across all ingested texts.
-      </p>
+      {error && (
+        <p id="search-error" className="form-error" role="alert">
+          {error}
+        </p>
+      )}
+      {!error && (
+        <p id="search-help" className="form-help">
+          Search finds passages semantically similar to your query across all ingested texts.
+        </p>
+      )}
     </form>
   );
 }

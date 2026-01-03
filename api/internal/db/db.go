@@ -4,7 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"strings"
+	"time"
 
 	"corpus/api/internal/config"
 	"corpus/api/internal/models"
@@ -20,11 +22,19 @@ func getConnection() (*sql.DB, error) {
 
 // SourceExists checks if a source URL has already been ingested.
 func SourceExists(ctx context.Context, sourceURL string) (bool, error) {
+	start := time.Now()
+
 	db, err := getConnection()
 	if err != nil {
 		return false, fmt.Errorf("failed to connect to database: %w", err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			slog.Warn("failed to close database connection",
+				"error", err,
+				"operation", "SourceExists")
+		}
+	}()
 
 	var exists bool
 	err = db.QueryRowContext(ctx,
@@ -33,18 +43,36 @@ func SourceExists(ctx context.Context, sourceURL string) (bool, error) {
 	).Scan(&exists)
 
 	if err != nil {
+		slog.Error("database query failed",
+			"operation", "SourceExists",
+			"error", err,
+			"duration_ms", time.Since(start).Milliseconds())
 		return false, err
 	}
+
+	slog.Debug("source existence checked",
+		"operation", "SourceExists",
+		"exists", exists,
+		"duration_ms", time.Since(start).Milliseconds())
+
 	return exists, nil
 }
 
 // HashExists checks if a text hash already exists.
 func HashExists(ctx context.Context, hash string) (bool, error) {
+	start := time.Now()
+
 	db, err := getConnection()
 	if err != nil {
 		return false, fmt.Errorf("failed to connect to database: %w", err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			slog.Warn("failed to close database connection",
+				"error", err,
+				"operation", "HashExists")
+		}
+	}()
 
 	var exists bool
 	err = db.QueryRowContext(ctx,
@@ -53,18 +81,36 @@ func HashExists(ctx context.Context, hash string) (bool, error) {
 	).Scan(&exists)
 
 	if err != nil {
+		slog.Error("database query failed",
+			"operation", "HashExists",
+			"error", err,
+			"duration_ms", time.Since(start).Milliseconds())
 		return false, err
 	}
+
+	slog.Debug("hash existence checked",
+		"operation", "HashExists",
+		"exists", exists,
+		"duration_ms", time.Since(start).Milliseconds())
+
 	return exists, nil
 }
 
 // ListTexts returns paginated texts grouped by source_url.
 func ListTexts(ctx context.Context, page, perPage int) ([]models.TextRow, int, error) {
+	start := time.Now()
+
 	db, err := getConnection()
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to connect to database: %w", err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			slog.Warn("failed to close database connection",
+				"error", err,
+				"operation", "ListTexts")
+		}
+	}()
 
 	offset := (page - 1) * perPage
 
@@ -74,6 +120,10 @@ func ListTexts(ctx context.Context, page, perPage int) ([]models.TextRow, int, e
 		"SELECT COUNT(DISTINCT source_url) FROM texts",
 	).Scan(&total)
 	if err != nil {
+		slog.Error("database query failed",
+			"operation", "ListTexts",
+			"error", err,
+			"duration_ms", time.Since(start).Milliseconds())
 		return nil, 0, err
 	}
 
@@ -93,6 +143,10 @@ func ListTexts(ctx context.Context, page, perPage int) ([]models.TextRow, int, e
 		LIMIT ? OFFSET ?
 	`, perPage, offset)
 	if err != nil {
+		slog.Error("database query failed",
+			"operation", "ListTexts",
+			"error", err,
+			"duration_ms", time.Since(start).Milliseconds())
 		return nil, 0, err
 	}
 	defer rows.Close()
@@ -110,16 +164,33 @@ func ListTexts(ctx context.Context, page, perPage int) ([]models.TextRow, int, e
 		return nil, 0, err
 	}
 
+	duration := time.Since(start)
+	slog.Info("texts listed",
+		"operation", "ListTexts",
+		"page", page,
+		"per_page", perPage,
+		"returned", len(texts),
+		"total", total,
+		"duration_ms", duration.Milliseconds())
+
 	return texts, total, nil
 }
 
 // SearchTexts performs vector similarity search using the query embedding.
 func SearchTexts(ctx context.Context, embedding []float32, limit int) ([]models.SearchRow, error) {
+	start := time.Now()
+
 	db, err := getConnection()
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			slog.Warn("failed to close database connection",
+				"error", err,
+				"operation", "SearchTexts")
+		}
+	}()
 
 	// Build the embedding array literal for DuckDB
 	embeddingLiteral := floatsToArrayLiteral(embedding)
@@ -141,6 +212,11 @@ func SearchTexts(ctx context.Context, embedding []float32, limit int) ([]models.
 
 	rows, err := db.QueryContext(ctx, query, limit)
 	if err != nil {
+		slog.Error("database query failed",
+			"operation", "SearchTexts",
+			"error", err,
+			"limit", limit,
+			"duration_ms", time.Since(start).Milliseconds())
 		return nil, err
 	}
 	defer rows.Close()
@@ -157,6 +233,14 @@ func SearchTexts(ctx context.Context, embedding []float32, limit int) ([]models.
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
+
+	duration := time.Since(start)
+	slog.Info("vector search completed",
+		"operation", "SearchTexts",
+		"limit", limit,
+		"results", len(results),
+		"embedding_dim", len(embedding),
+		"duration_ms", duration.Milliseconds())
 
 	return results, nil
 }

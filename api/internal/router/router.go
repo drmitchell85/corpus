@@ -1,11 +1,12 @@
 package router
 
 import (
-	"encoding/json"
+	"log/slog"
 	"net/http"
 	"time"
 
 	"corpus/api/internal/handler"
+	appMiddleware "corpus/api/internal/middleware"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -14,7 +15,8 @@ import (
 func New() *chi.Mux {
 	r := chi.NewRouter()
 
-	r.Use(middleware.Logger)
+	// Use custom request logger with request ID tracking
+	r.Use(appMiddleware.RequestLogger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(30 * time.Second))
 
@@ -30,7 +32,9 @@ func New() *chi.Mux {
 
 func handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
-		"status": "ok",
-	})
+	w.WriteHeader(http.StatusOK)
+	if _, err := w.Write([]byte(`{"status":"ok"}`)); err != nil {
+		slog.Warn("failed to write health check response",
+			"error", err)
+	}
 }

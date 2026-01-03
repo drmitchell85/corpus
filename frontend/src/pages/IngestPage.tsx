@@ -16,6 +16,9 @@ interface FormErrors {
   year?: string;
 }
 
+const MIN_YEAR = 1000;
+const MAX_YEAR = 2100;
+
 const INITIAL_FORM_DATA: FormData = {
   url: '',
   title: '',
@@ -44,14 +47,22 @@ export function IngestPage() {
     }
   };
 
-  const validateForm = (): boolean => {
+  const validateForm = (): { valid: boolean; normalizedUrl: string } => {
     const newErrors: FormErrors = {};
 
     // URL is required and must be valid
-    const urlTrimmed = formData.url.trim();
+    let urlTrimmed = formData.url.trim();
     if (!urlTrimmed) {
       newErrors.url = 'URL is required';
     } else {
+      // Auto-prepend https:// if no protocol is specified
+      // Check for protocol separator to detect any existing protocol (http, ftp, file, etc.)
+      if (!urlTrimmed.includes('://')) {
+        urlTrimmed = 'https://' + urlTrimmed;
+        // Update form data with prepended protocol for display
+        setFormData((prev) => ({ ...prev, url: urlTrimmed }));
+      }
+
       try {
         const parsed = new URL(urlTrimmed);
         // Only allow http/https protocols for security
@@ -63,24 +74,28 @@ export function IngestPage() {
       }
     }
 
-    // Year must be a valid number if provided
+    // Year must be a valid integer if provided
     if (formData.year.trim()) {
-      const yearNum = parseInt(formData.year, 10);
-      if (isNaN(yearNum)) {
-        newErrors.year = 'Year must be a number';
-      } else if (yearNum < 1000 || yearNum > new Date().getFullYear() + 10) {
-        newErrors.year = `Year must be between 1000 and ${new Date().getFullYear() + 10}`;
+      const yearNum = Number(formData.year);
+      if (!Number.isInteger(yearNum)) {
+        newErrors.year = 'Year must be a valid integer';
+      } else if (yearNum < MIN_YEAR || yearNum > MAX_YEAR) {
+        newErrors.year = `Year must be between ${MIN_YEAR} and ${MAX_YEAR}`;
       }
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return {
+      valid: Object.keys(newErrors).length === 0,
+      normalizedUrl: urlTrimmed,
+    };
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (!validateForm()) {
+    const { valid, normalizedUrl } = validateForm();
+    if (!valid) {
       return;
     }
 
@@ -96,7 +111,7 @@ export function IngestPage() {
       if (formData.genre.trim()) metadata.genre = formData.genre.trim();
 
       const response = await ingestUrl({
-        source_url: formData.url.trim(),
+        source_url: normalizedUrl,
         metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
       });
 

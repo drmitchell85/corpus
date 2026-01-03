@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+	"log/slog"
 	"sync"
 
 	"corpus/api/internal/config"
@@ -27,6 +28,10 @@ func Client() *redis.Client {
 func newClient(redisURL string) *redis.Client {
 	opts, err := redis.ParseURL(redisURL)
 	if err != nil {
+		slog.Warn("failed to parse redis URL, using default localhost:6379",
+			"error", err,
+			"provided_url", redisURL,
+			"fallback", "localhost:6379")
 		opts = &redis.Options{Addr: "localhost:6379"}
 	}
 	return redis.NewClient(opts)

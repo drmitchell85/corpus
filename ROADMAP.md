@@ -79,6 +79,55 @@
 
 ## Phase 5: Polish
 
-- [ ] Error handling and retries
-- [ ] Input validation
-- [ ] Basic logging
+### 5.1 Error Handling — Go API ✓
+- [x] Add structured error logging before generic responses (`handler/*.go`)
+- [x] Log actual errors with context (db, celery, embed, redis failures)
+- [x] Handle JSON encoding errors in `response.go`, `router.go`
+- [x] Add `http.MaxBytesReader` to ingest endpoint (like upload)
+- [x] Log warning when redis URL parse fails and fallback is used
+
+### 5.2 Error Handling — Python Workers
+- [x] Catch specific exceptions in `gutenberg.py` (ConnectionError, Timeout, HTTPError)
+- [x] Catch `fitz.FileDataError` for corrupt PDFs in `pdf.py`
+- [x] Wrap model loading in try/except in `embedder.py`
+- [x] Replace blanket retry with whitelist of retryable exceptions in `worker.py`
+
+### 5.3 Retry Configuration — Python Workers ✓
+- [x] Add exponential backoff to Celery task (`retry_backoff=True`, `retry_jitter=True`)
+- [x] Add task timeouts (`task_time_limit=600`, `task_soft_time_limit=540`)
+- [x] Add HTTP-level retries to `gutenberg.py` with `requests.adapters.HTTPAdapter`
+- [x] Make `max_retries` configurable via environment variable
+
+### 5.4 Error Handling — Frontend ✓
+- [x] Wrap all `fetch()` calls in try/catch in `api/client.ts`
+- [x] Differentiate network vs server errors in `useSearch.ts`, `useTexts.ts`
+- [x] Add retry logic (3 attempts) to `JobStatusIndicator.tsx` before marking failed
+
+### 5.5 Input Validation — Go API ✓
+- [x] Validate URL format (parse, check http/https scheme) in `ingest.go`
+- [x] Validate PDF magic bytes `%PDF-` not just extension in `upload.go`
+- [x] Validate year is integer in range 1000-2100 in `upload.go`
+- [x] Validate search query length (1-1000 chars) in `search.go`
+- [x] Validate job_id is UUID format in `status.go`
+- [x] Add config validation on startup (paths writable, services reachable)
+
+### 5.6 Input Validation — Frontend ✓
+- [x] Validate search query 3+ chars min, 500 chars max in `SearchInput.tsx`
+- [x] Auto-prepend `https://` if missing protocol in `IngestPage.tsx`
+- [x] Validate year is integer with `Number.isInteger()` in forms
+- [x] Validate MIME type `application/pdf` not just extension in `UploadPage.tsx`
+
+### 5.7 Logging — Go API ✓
+- [x] Add `log/slog` structured logging infrastructure
+- [x] Log startup config (port, db path, embed URL, redis URL sanitized)
+- [x] Add request logging middleware (request ID, method, path, status, duration)
+- [x] Log incoming requests with params in handlers
+- [x] Log operation outcomes and timing for external calls
+
+### 5.8 Logging — Python Workers ✓
+- [x] Add structured logging setup in `__init__.py` (JSON format, task_id propagation)
+- [x] Log task lifecycle in `worker.py` (start, fetch, chunk, embed, store, retry)
+- [x] Log network operations in `gutenberg.py` (URL, response size, time)
+- [x] Log PDF extraction in `pdf.py` (file path, page count, time)
+- [x] Log embeddings in `embedder.py` (model load, batch size, throughput)
+- [x] Log database operations in `db.py` (transactions, stored/skipped counts)

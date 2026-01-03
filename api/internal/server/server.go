@@ -2,8 +2,9 @@ package server
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
@@ -24,27 +25,51 @@ func Start() {
 		IdleTimeout:  60 * time.Second,
 	}
 
+	// Log startup configuration
+	slog.Info("server starting",
+		"port", config.APIPort,
+		"db_path", config.DBPath,
+		"embed_service_url", config.EmbedServiceURL,
+		"redis_url", sanitizeRedisURL(config.RedisURL),
+		"upload_path", config.UploadPath,
+		"read_timeout", srv.ReadTimeout,
+		"write_timeout", srv.WriteTimeout,
+		"idle_timeout", srv.IdleTimeout)
+
 	go func() {
-		log.Printf("Server starting on %s", srv.Addr)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Server error: %v", err)
+			slog.Error("server error", "error", err)
+			panic(err)
 		}
 	}()
 }
 
 func Stop() {
-	log.Println("Shutting down server...")
+	slog.Info("shutting down server")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatalf("Server shutdown error: %v", err)
+		slog.Error("server shutdown error", "error", err)
+		panic(err)
 	}
-	log.Println("Server stopped")
+	slog.Info("server stopped gracefully")
 }
 
 func WaitForShutdown() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
+}
+
+// sanitizeRedisURL removes password from Redis URL for logging.
+func sanitizeRedisURL(redisURL string) string {
+	parsed, err := url.Parse(redisURL)
+	if err != nil {
+		return "[invalid redis URL]"
+	}
+	if parsed.User != nil {
+		parsed.User = url.UserPassword("***", "***")
+	}
+	return parsed.String()
 }
