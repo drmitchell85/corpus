@@ -22,6 +22,7 @@ uploads/
 
 # Go
 api/corpus-api
+api/main
 
 # Claude
 .claude
