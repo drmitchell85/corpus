@@ -92,11 +92,11 @@
 - [x] Wrap model loading in try/except in `embedder.py`
 - [x] Replace blanket retry with whitelist of retryable exceptions in `worker.py`
 
-### 5.3 Retry Configuration — Python Workers
-- [ ] Add exponential backoff to Celery task (`retry_backoff=True`, `retry_jitter=True`)
-- [ ] Add task timeouts (`task_time_limit=600`, `task_soft_time_limit=540`)
-- [ ] Add HTTP-level retries to `gutenberg.py` with `requests.adapters.HTTPAdapter`
-- [ ] Make `max_retries` configurable via environment variable
+### 5.3 Retry Configuration — Python Workers ✓
+- [x] Add exponential backoff to Celery task (`retry_backoff=True`, `retry_jitter=True`)
+- [x] Add task timeouts (`task_time_limit=600`, `task_soft_time_limit=540`)
+- [x] Add HTTP-level retries to `gutenberg.py` with `requests.adapters.HTTPAdapter`
+- [x] Make `max_retries` configurable via environment variable
 
 ### 5.4 Error Handling — Frontend
 - [ ] Wrap all `fetch()` calls in try/catch in `api/client.ts`
