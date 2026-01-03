@@ -15,6 +15,9 @@ interface FormErrors {
   year?: string;
 }
 
+const MIN_YEAR = 1000;
+const MAX_YEAR = 2100;
+
 const INITIAL_FORM_DATA: FormData = {
   file: null,
   title: '',
@@ -61,24 +64,32 @@ export function UploadPage() {
     if (!formData.file) {
       newErrors.file = 'Please select a PDF file';
     } else {
-      // Validate file extension
-      if (!formData.file.name.toLowerCase().endsWith('.pdf')) {
+      // Validate MIME type (not just file extension)
+      // Some browsers may not set MIME type, so we accept empty type if extension is .pdf
+      const hasPdfMime = formData.file.type === 'application/pdf';
+      const hasPdfExtension = formData.file.name.toLowerCase().endsWith('.pdf');
+      const hasEmptyMime = formData.file.type === '';
+
+      if (!hasPdfMime && !hasEmptyMime) {
+        newErrors.file = 'Only PDF files are accepted (invalid file type)';
+      } else if (!hasPdfExtension) {
         newErrors.file = 'Only PDF files are accepted';
-      }
-      // Validate file size (50MB max)
-      const maxSize = 50 * 1024 * 1024; // 50MB in bytes
-      if (formData.file.size > maxSize) {
-        newErrors.file = 'File size must not exceed 50MB';
+      } else {
+        // Validate file size (50MB max)
+        const maxSize = 50 * 1024 * 1024; // 50MB in bytes
+        if (formData.file.size > maxSize) {
+          newErrors.file = 'File size must not exceed 50MB';
+        }
       }
     }
 
-    // Year must be a valid number if provided
+    // Year must be a valid integer if provided
     if (formData.year.trim()) {
-      const yearNum = parseInt(formData.year, 10);
-      if (isNaN(yearNum)) {
-        newErrors.year = 'Year must be a number';
-      } else if (yearNum < 1000 || yearNum > new Date().getFullYear() + 10) {
-        newErrors.year = `Year must be between 1000 and ${new Date().getFullYear() + 10}`;
+      const yearNum = Number(formData.year);
+      if (!Number.isInteger(yearNum)) {
+        newErrors.year = 'Year must be a valid integer';
+      } else if (yearNum < MIN_YEAR || yearNum > MAX_YEAR) {
+        newErrors.year = `Year must be between ${MIN_YEAR} and ${MAX_YEAR}`;
       }
     }
 
@@ -163,7 +174,7 @@ export function UploadPage() {
             id="file"
             name="file"
             type="file"
-            accept=".pdf"
+            accept="application/pdf,.pdf"
             onChange={handleFileChange}
             disabled={isSubmitting}
             aria-required="true"

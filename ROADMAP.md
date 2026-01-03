@@ -111,11 +111,11 @@
 - [x] Validate job_id is UUID format in `status.go`
 - [x] Add config validation on startup (paths writable, services reachable)
 
-### 5.6 Input Validation — Frontend
-- [ ] Validate search query 3+ chars min, 500 chars max in `SearchInput.tsx`
-- [ ] Auto-prepend `https://` if missing protocol in `IngestPage.tsx`
-- [ ] Validate year is integer with `Number.isInteger()` in forms
-- [ ] Validate MIME type `application/pdf` not just extension in `UploadPage.tsx`
+### 5.6 Input Validation — Frontend ✓
+- [x] Validate search query 3+ chars min, 500 chars max in `SearchInput.tsx`
+- [x] Auto-prepend `https://` if missing protocol in `IngestPage.tsx`
+- [x] Validate year is integer with `Number.isInteger()` in forms
+- [x] Validate MIME type `application/pdf` not just extension in `UploadPage.tsx`
 
 ### 5.7 Logging — Go API
 - [ ] Add `log/slog` structured logging infrastructure
