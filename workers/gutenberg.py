@@ -15,11 +15,22 @@ def fetch_gutenberg_text(url: str, timeout: int = 30) -> str:
         Raw text content from the URL
 
     Raises:
-        requests.RequestException: If the fetch fails
+        requests.ConnectionError: If network connection fails (retryable)
+        requests.Timeout: If request times out (retryable)
+        requests.HTTPError: If server returns error status (may be retryable)
+        ValueError: If URL is invalid (not retryable)
     """
-    response = requests.get(url, timeout=timeout)
-    response.raise_for_status()
-    return response.text
+    try:
+        response = requests.get(url, timeout=timeout)
+        response.raise_for_status()
+        return response.text
+    except requests.exceptions.MissingSchema as exc:
+        # Invalid URL format (e.g., missing http://)
+        raise ValueError(f"Invalid URL format: {url}") from exc
+    except requests.exceptions.InvalidURL as exc:
+        # Malformed URL
+        raise ValueError(f"Malformed URL: {url}") from exc
+    # Let ConnectionError, Timeout, HTTPError propagate naturally
 
 
 def strip_gutenberg_boilerplate(text: str) -> str:

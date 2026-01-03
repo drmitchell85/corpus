@@ -1,5 +1,6 @@
 """PDF text extraction using PyMuPDF."""
 
+import os
 import re
 import fitz  # PyMuPDF
 
@@ -14,10 +15,19 @@ def extract_pdf_text(pdf_path: str) -> str:
         Raw text content from all pages
 
     Raises:
-        FileNotFoundError: If the PDF file doesn't exist
-        fitz.FileDataError: If the file is not a valid PDF
+        FileNotFoundError: If the PDF file doesn't exist (not retryable)
+        ValueError: If the file is corrupt or not a valid PDF (not retryable)
     """
-    doc = fitz.open(pdf_path)
+    # Explicitly check file existence (PyMuPDF may not raise standard FileNotFoundError)
+    if not os.path.isfile(pdf_path):
+        raise FileNotFoundError(f"PDF file not found: {pdf_path}")
+
+    try:
+        doc = fitz.open(pdf_path)
+    except fitz.FileDataError as exc:
+        # Corrupt or invalid PDF file - not retryable
+        raise ValueError(f"Corrupt or invalid PDF file: {pdf_path}") from exc
+
     try:
         pages = []
         for page in doc:
