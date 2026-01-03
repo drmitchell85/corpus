@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect } from 'react';
-import { listTexts, ApiError } from '@/api';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { listTexts, ApiError, NetworkError } from '@/api';
 import type { TextListResponse } from '@/types/api';
 
 interface UseTextsState {
@@ -14,8 +14,8 @@ export interface UseTextsReturn extends UseTextsState {
 }
 
 export function useTexts(
-  initialPage: number = 1,
-  initialPerPage: number = 20
+  defaultPage: number = 1,  // Renamed from initialPage to clarify this is default-only
+  defaultPerPage: number = 20  // Renamed from initialPerPage to clarify this is default-only
 ): UseTextsReturn {
   const [state, setState] = useState<UseTextsState>({
     data: null,
@@ -24,9 +24,12 @@ export function useTexts(
   });
 
   const [lastFetchParams, setLastFetchParams] = useState({
-    page: initialPage,
-    perPage: initialPerPage,
+    page: defaultPage,
+    perPage: defaultPerPage,
   });
+
+  // Unmount guard to prevent state updates after component unmounts
+  const mountedRef = useRef(true);
 
   const fetchTexts = useCallback(
     async (page: number, perPage: number) => {
@@ -38,6 +41,10 @@ export function useTexts(
 
       try {
         const data = await listTexts(page, perPage);
+
+        // Prevent state updates if component unmounted during fetch
+        if (!mountedRef.current) return;
+
         setState({
           data,
           isLoading: false,
@@ -45,12 +52,26 @@ export function useTexts(
         });
         setLastFetchParams({ page, perPage });
       } catch (err) {
-        const message =
-          err instanceof ApiError
-            ? err.body?.message ?? err.message
-            : 'An unexpected error occurred';
+        // Prevent state update if component unmounted during fetch
+        if (!mountedRef.current) return;
+
+        let message: string;
+
+        if (err instanceof NetworkError) {
+          // Network errors: DNS failure, connection refused, offline, timeout
+          message = 'Network error: Unable to reach the server. Please check your connection.';
+        } else if (err instanceof ApiError) {
+          // Server errors: 4xx, 5xx responses with structured error info
+          message = err.body?.message ?? `Server error: ${err.message}`;
+        } else {
+          // Unexpected errors (should be rare with proper error handling)
+          // Log to console for debugging - in production, send to error tracking service (Sentry, etc.)
+          console.error('Unexpected error in listTexts:', err);
+          message = 'An unexpected error occurred';
+        }
+
         setState((prev) => ({
-          data: prev.data, // Preserve previous data on error
+          data: prev.data, // Preserve previous data on error - library maintains state across pages
           isLoading: false,
           error: message,
         }));
@@ -63,11 +84,17 @@ export function useTexts(
     return fetchTexts(lastFetchParams.page, lastFetchParams.perPage);
   }, [lastFetchParams.page, lastFetchParams.perPage, fetchTexts]);
 
-  // Initial fetch on mount
+  // Initial fetch on mount with cleanup
+  // Note: Uses default values only - if parent changes these props, hook won't re-fetch
   useEffect(() => {
-    fetchTexts(initialPage, initialPerPage);
+    fetchTexts(defaultPage, defaultPerPage);
+
+    // Cleanup function to prevent state updates after unmount
+    return () => {
+      mountedRef.current = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run once on mount
+  }, []); // Intentionally empty - only run once on mount with default values
 
   return {
     ...state,

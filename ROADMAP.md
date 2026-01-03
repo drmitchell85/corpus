@@ -98,10 +98,10 @@
 - [x] Add HTTP-level retries to `gutenberg.py` with `requests.adapters.HTTPAdapter`
 - [x] Make `max_retries` configurable via environment variable
 
-### 5.4 Error Handling — Frontend
-- [ ] Wrap all `fetch()` calls in try/catch in `api/client.ts`
-- [ ] Differentiate network vs server errors in `useSearch.ts`, `useTexts.ts`
-- [ ] Add retry logic (3 attempts) to `JobStatusIndicator.tsx` before marking failed
+### 5.4 Error Handling — Frontend ✓
+- [x] Wrap all `fetch()` calls in try/catch in `api/client.ts`
+- [x] Differentiate network vs server errors in `useSearch.ts`, `useTexts.ts`
+- [x] Add retry logic (3 attempts) to `JobStatusIndicator.tsx` before marking failed
 
 ### 5.5 Input Validation — Go API
 - [ ] Validate URL format (parse, check http/https scheme) in `ingest.go`
