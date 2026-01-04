@@ -160,11 +160,13 @@
 - [x] Add symlink and hardlink detection
 - [x] Add TOCTOU race condition protection
 
-### 6.4 Frontend — API Client
-- [ ] Add `DeleteTextResponse` type to `types/api.ts`
-- [ ] Add `deleteText(id: number)` function to `api/client.ts` (DELETE request)
-- [ ] Export `deleteText` from `api/index.ts`
-- [ ] Handle errors: ApiError for 404/500, NetworkError for network failures
+### 6.4 Frontend — API Client ✓
+- [x] Add `DeleteTextResponse` type to `types/api.ts`
+- [x] Add `deleteText(id: number)` function to `api/client.ts` (DELETE request)
+- [x] Export `deleteText` from `api/index.ts`
+- [x] Handle errors: ApiError for 404/500, NetworkError for network failures
+- [x] Add client-side input validation (safe positive integer check)
+- [x] Add comprehensive JSDoc documentation with error types
 
 ### 6.5 Frontend — Delete Hook
 - [ ] Create `hooks/useDeleteText.ts` hook with delete state management

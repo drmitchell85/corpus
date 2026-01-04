@@ -5,6 +5,7 @@ import type {
   StatusResponse,
   TextListResponse,
   SearchResponse,
+  DeleteTextResponse,
   HealthResponse,
   ErrorResponse,
 } from '@/types/api.ts';
@@ -199,6 +200,35 @@ export async function searchTexts(
     });
     const response = await fetch(`${API_BASE}/search?${params}`);
     return handleResponse<SearchResponse>(response);
+  } catch (err) {
+    if (err instanceof ApiError) {
+      throw err;
+    }
+    throw new NetworkError('Network request failed. Check your connection.', err);
+  }
+}
+
+/**
+ * Delete a text and all its chunks by ID
+ *
+ * @param id - The text ID (must be a positive integer)
+ * @returns Promise resolving to delete confirmation with chunks count
+ * @throws {Error} If the ID is not a valid positive integer (client-side validation)
+ * @throws {ApiError} If the text is not found (404) or server error (500)
+ * @throws {NetworkError} If the network request fails
+ */
+export async function deleteText(id: number): Promise<DeleteTextResponse> {
+  // Validate ID is a safe positive integer
+  // Number.isSafeInteger() checks both isInteger and range [-2^53+1, 2^53-1]
+  if (!Number.isSafeInteger(id) || id <= 0) {
+    throw new Error('Invalid text ID: must be a positive integer');
+  }
+
+  try {
+    const response = await fetch(`${API_BASE}/texts/${id}`, {
+      method: 'DELETE',
+    });
+    return handleResponse<DeleteTextResponse>(response);
   } catch (err) {
     if (err instanceof ApiError) {
       throw err;

@@ -7,6 +7,7 @@ export {
   getJobStatus,
   listTexts,
   searchTexts,
+  deleteText,
 } from './client.ts';
 
 export type * from '@/types/api.ts';
