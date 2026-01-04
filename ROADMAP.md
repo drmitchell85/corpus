@@ -150,12 +150,15 @@
 - [x] Handle race condition (chunksDeleted == 0 returns 404)
 - [x] Ensure type consistency (all ID fields are int64)
 
-### 6.3 Backend — PDF Cleanup (Optional Enhancement)
-- [ ] Investigate PDF file naming in `handler/upload.go` to understand source_url pattern
-- [ ] Add helper to detect if source is uploaded PDF (check source_url pattern)
-- [ ] Add helper to convert source_url to filesystem path
-- [ ] Delete PDF file from `./uploads/` after successful chunk deletion
-- [ ] Log warnings for missing files (don't fail delete operation)
+### 6.3 Backend — PDF Cleanup (Optional Enhancement) ✓
+- [x] Investigate PDF file naming in `handler/upload.go` to understand source_url pattern
+- [x] Add helper to detect if source is uploaded PDF with canonical path validation
+- [x] Add helper to safely delete PDF file with security hardening
+- [x] Delete PDF file from `./uploads/` after successful chunk deletion
+- [x] Log warnings for missing files (don't fail delete operation)
+- [x] Add path traversal protection (canonical path checking)
+- [x] Add symlink and hardlink detection
+- [x] Add TOCTOU race condition protection
 
 ### 6.4 Frontend — API Client
 - [ ] Add `DeleteTextResponse` type to `types/api.ts`
