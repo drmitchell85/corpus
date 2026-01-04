@@ -131,3 +131,55 @@
 - [x] Log PDF extraction in `pdf.py` (file path, page count, time)
 - [x] Log embeddings in `embedder.py` (model load, batch size, throughput)
 - [x] Log database operations in `db.py` (transactions, stored/skipped counts)
+
+## Phase 6: Delete Functionality
+
+### 6.1 Backend — Database Layer ✓
+- [x] Add `getWriteConnection()` helper for read-write database access in `db/db.go`
+- [x] Add `GetSourceURLByID(ctx, id)` function to get source_url from text ID
+- [x] Add `DeleteTextBySourceURL(ctx, sourceURL)` function to delete all chunks
+- [x] Add structured logging for delete operations (chunks_deleted, duration)
+- [x] Handle edge cases (non-existent source_url returns 0, not error)
+
+### 6.2 Backend — API Handler
+- [ ] Add `DeleteTextResponse` model to `models/models.go` (id, source_url, chunks_deleted, message)
+- [ ] Add `DeleteText` handler to `handler/texts.go` (parse ID, get source_url, delete, respond)
+- [ ] Add route `r.Delete("/texts/{id}", handler.DeleteText)` to `router/router.go`
+- [ ] Handle errors: 400 for invalid ID format, 404 for not found, 500 for database errors
+- [ ] Add request logging with context (request_id, text_id, source_url)
+
+### 6.3 Backend — PDF Cleanup (Optional Enhancement)
+- [ ] Investigate PDF file naming in `handler/upload.go` to understand source_url pattern
+- [ ] Add helper to detect if source is uploaded PDF (check source_url pattern)
+- [ ] Add helper to convert source_url to filesystem path
+- [ ] Delete PDF file from `./uploads/` after successful chunk deletion
+- [ ] Log warnings for missing files (don't fail delete operation)
+
+### 6.4 Frontend — API Client
+- [ ] Add `DeleteTextResponse` type to `types/api.ts`
+- [ ] Add `deleteText(id: number)` function to `api/client.ts` (DELETE request)
+- [ ] Export `deleteText` from `api/index.ts`
+- [ ] Handle errors: ApiError for 404/500, NetworkError for network failures
+
+### 6.5 Frontend — Delete Hook
+- [ ] Create `hooks/useDeleteText.ts` hook with delete state management
+- [ ] Implement `deleteText(id)` with error handling (NetworkError, ApiError 404/500)
+- [ ] Add `onSuccess` callback support for triggering refresh after delete
+- [ ] Add unmount guard with `mountedRef` pattern (consistent with other hooks)
+- [ ] Export hook from `hooks/index.ts`
+
+### 6.6 Frontend — Delete Button UI
+- [ ] Add `onDelete` and `isDeleting` props to `TextCard` component
+- [ ] Add delete button to `TextCard.tsx` with confirmation dialog
+- [ ] Show chunk count in confirmation message ("delete X chunks")
+- [ ] Integrate `useDeleteText` hook in `LibraryPage.tsx`
+- [ ] Call `refresh()` after successful deletion to update list
+- [ ] Display delete errors in error banner with dismiss button
+- [ ] Track `deletingId` state to show loading on specific card
+
+### 6.7 Frontend — Styling
+- [ ] Add `.text-card__delete-btn` styles (danger color scheme: red)
+- [ ] Add hover state (darker red)
+- [ ] Add disabled state (gray, cursor not-allowed)
+- [ ] Position button appropriately in card layout
+- [ ] Ensure accessibility (focus states, keyboard navigation)
