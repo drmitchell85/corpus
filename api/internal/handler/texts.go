@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"database/sql"
+	"errors"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -8,6 +10,8 @@ import (
 	"corpus/api/internal/db"
 	appMiddleware "corpus/api/internal/middleware"
 	"corpus/api/internal/models"
+
+	"github.com/go-chi/chi/v5"
 )
 
 const (
@@ -76,6 +80,81 @@ func ListTexts(w http.ResponseWriter, r *http.Request) {
 		Page:       page,
 		PerPage:    perPage,
 		TotalPages: totalPages,
+	})
+}
+
+// DeleteText handles DELETE /texts/{id} requests.
+func DeleteText(w http.ResponseWriter, r *http.Request) {
+	reqID := appMiddleware.GetRequestID(r.Context())
+	idStr := chi.URLParam(r, "id")
+
+	slog.Debug("delete text request received",
+		"request_id", reqID,
+		"text_id", idStr,
+		"path", r.URL.Path)
+
+	// Validate ID format
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil || id <= 0 {
+		slog.Warn("invalid text ID format",
+			"request_id", reqID,
+			"text_id", idStr,
+			"error", err,
+			"remote_addr", r.RemoteAddr)
+		respondFailure(w, http.StatusBadRequest, "text ID must be a positive integer")
+		return
+	}
+
+	// Get source_url for this text ID
+	sourceURL, err := db.GetSourceURLByID(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			slog.Warn("text not found for deletion",
+				"request_id", reqID,
+				"text_id", id)
+			respondFailure(w, http.StatusNotFound, "text not found")
+			return
+		}
+		slog.Error("database error getting source_url",
+			"request_id", reqID,
+			"text_id", id,
+			"error", err,
+			"operation", "GetSourceURLByID")
+		respondFailure(w, http.StatusInternalServerError, "database error")
+		return
+	}
+
+	// Delete all chunks for this source
+	chunksDeleted, err := db.DeleteTextBySourceURL(r.Context(), sourceURL)
+	if err != nil {
+		slog.Error("database error deleting text",
+			"request_id", reqID,
+			"text_id", id,
+			"error", err,
+			"operation", "DeleteTextBySourceURL")
+		respondFailure(w, http.StatusInternalServerError, "database error")
+		return
+	}
+
+	// Handle race condition: text was deleted between lookup and delete
+	if chunksDeleted == 0 {
+		slog.Warn("text was deleted between lookup and delete (race condition)",
+			"request_id", reqID,
+			"text_id", id)
+		respondFailure(w, http.StatusNotFound, "text not found")
+		return
+	}
+
+	slog.Info("text deleted successfully",
+		"request_id", reqID,
+		"text_id", id,
+		"chunks_deleted", chunksDeleted)
+
+	respondSuccess(w, http.StatusOK, models.DeleteTextResponse{
+		ID:            id,
+		SourceURL:     sourceURL,
+		ChunksDeleted: chunksDeleted,
+		Message:       "text deleted successfully",
 	})
 }
 

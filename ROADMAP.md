@@ -141,12 +141,14 @@
 - [x] Add structured logging for delete operations (chunks_deleted, duration)
 - [x] Handle edge cases (non-existent source_url returns 0, not error)
 
-### 6.2 Backend — API Handler
-- [ ] Add `DeleteTextResponse` model to `models/models.go` (id, source_url, chunks_deleted, message)
-- [ ] Add `DeleteText` handler to `handler/texts.go` (parse ID, get source_url, delete, respond)
-- [ ] Add route `r.Delete("/texts/{id}", handler.DeleteText)` to `router/router.go`
-- [ ] Handle errors: 400 for invalid ID format, 404 for not found, 500 for database errors
-- [ ] Add request logging with context (request_id, text_id, source_url)
+### 6.2 Backend — API Handler ✓
+- [x] Add `DeleteTextResponse` model to `models/models.go` (id, source_url, chunks_deleted, message)
+- [x] Add `DeleteText` handler to `handler/texts.go` (parse ID, get source_url, delete, respond)
+- [x] Add route `r.Delete("/texts/{id}", handler.DeleteText)` to `router/router.go`
+- [x] Handle errors: 400 for invalid ID format, 404 for not found, 500 for database errors
+- [x] Add request logging with context (request_id, text_id)
+- [x] Handle race condition (chunksDeleted == 0 returns 404)
+- [x] Ensure type consistency (all ID fields are int64)
 
 ### 6.3 Backend — PDF Cleanup (Optional Enhancement)
 - [ ] Investigate PDF file naming in `handler/upload.go` to understand source_url pattern
