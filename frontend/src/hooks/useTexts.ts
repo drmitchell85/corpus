@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { listTexts, ApiError, NetworkError } from '@/api';
 import type { TextListResponse } from '@/types/api';
 
@@ -30,6 +30,12 @@ export function useTexts(
 
   // Unmount guard to prevent state updates after component unmounts
   const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;  // Reset to true on every mount (handles StrictMode remounts)
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const fetchTexts = useCallback(
     async (page: number, perPage: number) => {
@@ -42,6 +48,9 @@ export function useTexts(
       try {
         const data = await listTexts(page, perPage);
 
+        // Prevent state updates if component unmounted during fetch
+        if (!mountedRef.current) return;
+
         setState({
           data,
           isLoading: false,
@@ -49,6 +58,9 @@ export function useTexts(
         });
         setLastFetchParams({ page, perPage });
       } catch (err) {
+        // Prevent state update if component unmounted during fetch
+        if (!mountedRef.current) return;
+
         let message: string;
 
         if (err instanceof NetworkError) {

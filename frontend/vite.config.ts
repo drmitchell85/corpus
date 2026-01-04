@@ -12,6 +12,7 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    strictPort: true,  // Fail if port 3000 is taken instead of auto-switching
     proxy: {
       '/api': {
         target: 'http://localhost:8080',

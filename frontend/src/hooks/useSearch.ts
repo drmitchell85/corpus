@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { searchTexts, ApiError, NetworkError } from '@/api';
 import type { SearchResponse } from '@/types/api';
 
@@ -25,6 +25,7 @@ export function useSearch(): UseSearchReturn {
   // Unmount guard to prevent state updates after component unmounts
   const mountedRef = useRef(true);
   useEffect(() => {
+    mountedRef.current = true;  // Reset to true on every mount (handles StrictMode remounts)
     return () => {
       mountedRef.current = false;
     };
@@ -40,6 +41,9 @@ export function useSearch(): UseSearchReturn {
     try {
       const results = await searchTexts(query, limit);
 
+      // Prevent state update if component unmounted during fetch
+      if (!mountedRef.current) return;
+
       setState({
         results,
         isLoading: false,
@@ -47,6 +51,9 @@ export function useSearch(): UseSearchReturn {
         hasSearched: true,
       });
     } catch (err) {
+      // Prevent state update if component unmounted during fetch
+      if (!mountedRef.current) return;
+
       let message: string;
 
       if (err instanceof NetworkError) {
