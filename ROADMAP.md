@@ -175,14 +175,14 @@
 - [x] Add unmount guard with `mountedRef` pattern (consistent with other hooks)
 - [x] Export hook from `hooks/index.ts`
 
-### 6.6 Frontend — Delete Button UI
-- [ ] Add `onDelete` and `isDeleting` props to `TextCard` component
-- [ ] Add delete button to `TextCard.tsx` with confirmation dialog
-- [ ] Show chunk count in confirmation message ("delete X chunks")
-- [ ] Integrate `useDeleteText` hook in `LibraryPage.tsx`
-- [ ] Call `refresh()` after successful deletion to update list
-- [ ] Display delete errors in error banner with dismiss button
-- [ ] Track `deletingId` state to show loading on specific card
+### 6.6 Frontend — Delete Button UI ✓
+- [x] Add `onDelete` and `isDeleting` props to `TextCard` component
+- [x] Add delete button to `TextCard.tsx` with confirmation dialog
+- [x] Show chunk count in confirmation message ("delete X chunks")
+- [x] Integrate `useDeleteText` hook in `LibraryPage.tsx`
+- [x] Call `refresh()` after successful deletion to update list
+- [x] Display delete errors in error banner with dismiss button
+- [x] Track `deletingId` state to show loading on specific card
 
 ### 6.7 Frontend — Styling
 - [ ] Add `.text-card__delete-btn` styles (danger color scheme: red)

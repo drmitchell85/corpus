@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PageLayout, TextCard, Pagination } from '@/components';
-import { useTexts } from '@/hooks';
+import { useTexts, useDeleteText } from '@/hooks';
 
 const TEXTS_PER_PAGE = 20;
 
 export function LibraryPage() {
   const [currentPage, setCurrentPage] = useState(1);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const { data, isLoading, error, fetchTexts } = useTexts(currentPage, TEXTS_PER_PAGE);
+  const { deleteText, isDeleting, error: deleteError, clearError } = useDeleteText();
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -15,6 +17,15 @@ export function LibraryPage() {
     // Scroll to top on page change
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+  };
+
+  const handleDelete = async (id: number) => {
+    setDeletingId(id);
+    await deleteText(id, () => {
+      // Refresh the list after successful deletion
+      fetchTexts(currentPage, TEXTS_PER_PAGE);
+    });
+    setDeletingId(null);
   };
 
   return (
@@ -28,6 +39,19 @@ export function LibraryPage() {
       {error && (
         <div className="status status--error" role="alert">
           {error}
+        </div>
+      )}
+
+      {deleteError && (
+        <div className="status status--error" role="alert">
+          <span>{deleteError}</span>
+          <button
+            onClick={clearError}
+            className="status__dismiss"
+            aria-label="Dismiss error"
+          >
+            ✕
+          </button>
         </div>
       )}
 
@@ -49,7 +73,11 @@ export function LibraryPage() {
               <ul className="library-list" role="list">
                 {data.texts.map((text) => (
                   <li key={text.id}>
-                    <TextCard text={text} />
+                    <TextCard
+                      text={text}
+                      onDelete={handleDelete}
+                      isDeleting={deletingId === text.id}
+                    />
                   </li>
                 ))}
               </ul>
