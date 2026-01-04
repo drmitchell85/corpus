@@ -25,6 +25,7 @@ export function useSearch(): UseSearchReturn {
   // Unmount guard to prevent state updates after component unmounts
   const mountedRef = useRef(true);
   useEffect(() => {
+    mountedRef.current = true;  // Reset to true on every mount (handles StrictMode remounts)
     return () => {
       mountedRef.current = false;
     };

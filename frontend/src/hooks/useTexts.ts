@@ -30,6 +30,12 @@ export function useTexts(
 
   // Unmount guard to prevent state updates after component unmounts
   const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;  // Reset to true on every mount (handles StrictMode remounts)
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const fetchTexts = useCallback(
     async (page: number, perPage: number) => {
@@ -84,15 +90,10 @@ export function useTexts(
     return fetchTexts(lastFetchParams.page, lastFetchParams.perPage);
   }, [lastFetchParams.page, lastFetchParams.perPage, fetchTexts]);
 
-  // Initial fetch on mount with cleanup
+  // Initial fetch on mount
   // Note: Uses default values only - if parent changes these props, hook won't re-fetch
   useEffect(() => {
     fetchTexts(defaultPage, defaultPerPage);
-
-    // Cleanup function to prevent state updates after unmount
-    return () => {
-      mountedRef.current = false;
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Intentionally empty - only run once on mount with default values
 
