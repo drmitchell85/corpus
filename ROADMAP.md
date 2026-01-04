@@ -168,12 +168,12 @@
 - [x] Add client-side input validation (safe positive integer check)
 - [x] Add comprehensive JSDoc documentation with error types
 
-### 6.5 Frontend — Delete Hook
-- [ ] Create `hooks/useDeleteText.ts` hook with delete state management
-- [ ] Implement `deleteText(id)` with error handling (NetworkError, ApiError 404/500)
-- [ ] Add `onSuccess` callback support for triggering refresh after delete
-- [ ] Add unmount guard with `mountedRef` pattern (consistent with other hooks)
-- [ ] Export hook from `hooks/index.ts`
+### 6.5 Frontend — Delete Hook ✓
+- [x] Create `hooks/useDeleteText.ts` hook with delete state management
+- [x] Implement `deleteText(id)` with error handling (NetworkError, ApiError 404/500)
+- [x] Add `onSuccess` callback support for triggering refresh after delete
+- [x] Add unmount guard with `mountedRef` pattern (consistent with other hooks)
+- [x] Export hook from `hooks/index.ts`
 
 ### 6.6 Frontend — Delete Button UI
 - [ ] Add `onDelete` and `isDeleting` props to `TextCard` component
