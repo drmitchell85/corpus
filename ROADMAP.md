@@ -64,14 +64,14 @@
 
 ## Phase 8: Chunk Detail Page
 
-### 8.1 Backend — Context Endpoint
-- [ ] Add `GetChunkContext(ctx, id, window)` to `db/db.go`
-- [ ] Query current chunk, count total chunks for source
-- [ ] Query before/after chunks using `chunk_index` ordering
-- [ ] Return `has_more_before`, `has_more_after` flags
-- [ ] Add `ChunkContextResponse` model to `models/models.go`
-- [ ] Add `GET /chunks/{id}/context` handler in `handler/chunks.go`
-- [ ] Register route in `router/router.go`
+### 8.1 Backend — Context Endpoint ✓
+- [x] Add `GetChunkContext(ctx, id, window)` to `db/db.go`
+- [x] Query current chunk, count total chunks for source
+- [x] Query before/after chunks using `chunk_index` ordering
+- [x] Return `has_more_before`, `has_more_after` flags
+- [x] Add `ChunkContextResponse` model to `models/models.go`
+- [x] Add `GET /chunks/{id}/context` handler in `handler/chunks.go`
+- [x] Register route in `router/router.go`
 
 ### 8.2 Backend — Pagination Endpoints
 - [ ] Add `GET /chunks/{id}/before?limit=3` endpoint

@@ -17,6 +17,8 @@ import (
 const (
 	defaultWindow = 1
 	maxWindow     = 10
+	defaultLimit  = 3
+	maxLimit      = 10
 )
 
 // GetChunkContext handles GET /chunks/{id}/context requests.
@@ -116,4 +118,160 @@ func GetChunkContext(w http.ResponseWriter, r *http.Request) {
 		Year:           int(context.CurrentChunk.Year.Int32),
 		Genre:          context.CurrentChunk.Genre.String,
 	})
+}
+
+// GetChunksBefore handles GET /chunks/{id}/before requests.
+func GetChunksBefore(w http.ResponseWriter, r *http.Request) {
+	reqID := appMiddleware.GetRequestID(r.Context())
+	idStr := chi.URLParam(r, "id")
+	limit := parseIntParam(r, "limit", defaultLimit)
+
+	slog.Debug("get chunks before request received",
+		"request_id", reqID,
+		"chunk_id", idStr,
+		"limit", limit)
+
+	// Validate ID format
+	id, err := strconv.Atoi(idStr)
+	if err != nil || id <= 0 {
+		slog.Warn("invalid chunk ID format",
+			"request_id", reqID,
+			"chunk_id", idStr,
+			"error", err,
+			"remote_addr", r.RemoteAddr)
+		respondFailure(w, http.StatusBadRequest, "chunk ID must be a positive integer")
+		return
+	}
+
+	// Validate and clamp limit parameter
+	if limit <= 0 {
+		limit = defaultLimit
+	}
+	if limit > maxLimit {
+		limit = maxLimit
+	}
+
+	// Get chunks from database
+	chunks, err := db.GetChunksBefore(r.Context(), id, limit)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			slog.Warn("chunk not found",
+				"request_id", reqID,
+				"chunk_id", id)
+			respondFailure(w, http.StatusNotFound, "chunk not found")
+			return
+		}
+		slog.Error("database error getting chunks before",
+			"request_id", reqID,
+			"chunk_id", id,
+			"error", err,
+			"operation", "GetChunksBefore")
+		respondFailure(w, http.StatusInternalServerError, "database error")
+		return
+	}
+
+	slog.Debug("chunks before retrieved successfully",
+		"request_id", reqID,
+		"chunk_id", id,
+		"limit", limit,
+		"count", len(chunks))
+
+	// Convert ChunkRow to ChunkItem
+	convertChunkRow := func(row *models.ChunkRow) models.ChunkItem {
+		return models.ChunkItem{
+			ID:         row.ID,
+			Text:       row.Text,
+			ChunkIndex: row.ChunkIndex,
+			SourceURL:  row.SourceURL,
+			Author:     row.Author.String,
+			Title:      row.Title.String,
+			Year:       int(row.Year.Int32),
+			Genre:      row.Genre.String,
+		}
+	}
+
+	items := make([]models.ChunkItem, 0, len(chunks))
+	for i := range chunks {
+		items = append(items, convertChunkRow(&chunks[i]))
+	}
+
+	respondSuccess(w, http.StatusOK, items)
+}
+
+// GetChunksAfter handles GET /chunks/{id}/after requests.
+func GetChunksAfter(w http.ResponseWriter, r *http.Request) {
+	reqID := appMiddleware.GetRequestID(r.Context())
+	idStr := chi.URLParam(r, "id")
+	limit := parseIntParam(r, "limit", defaultLimit)
+
+	slog.Debug("get chunks after request received",
+		"request_id", reqID,
+		"chunk_id", idStr,
+		"limit", limit)
+
+	// Validate ID format
+	id, err := strconv.Atoi(idStr)
+	if err != nil || id <= 0 {
+		slog.Warn("invalid chunk ID format",
+			"request_id", reqID,
+			"chunk_id", idStr,
+			"error", err,
+			"remote_addr", r.RemoteAddr)
+		respondFailure(w, http.StatusBadRequest, "chunk ID must be a positive integer")
+		return
+	}
+
+	// Validate and clamp limit parameter
+	if limit <= 0 {
+		limit = defaultLimit
+	}
+	if limit > maxLimit {
+		limit = maxLimit
+	}
+
+	// Get chunks from database
+	chunks, err := db.GetChunksAfter(r.Context(), id, limit)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			slog.Warn("chunk not found",
+				"request_id", reqID,
+				"chunk_id", id)
+			respondFailure(w, http.StatusNotFound, "chunk not found")
+			return
+		}
+		slog.Error("database error getting chunks after",
+			"request_id", reqID,
+			"chunk_id", id,
+			"error", err,
+			"operation", "GetChunksAfter")
+		respondFailure(w, http.StatusInternalServerError, "database error")
+		return
+	}
+
+	slog.Debug("chunks after retrieved successfully",
+		"request_id", reqID,
+		"chunk_id", id,
+		"limit", limit,
+		"count", len(chunks))
+
+	// Convert ChunkRow to ChunkItem
+	convertChunkRow := func(row *models.ChunkRow) models.ChunkItem {
+		return models.ChunkItem{
+			ID:         row.ID,
+			Text:       row.Text,
+			ChunkIndex: row.ChunkIndex,
+			SourceURL:  row.SourceURL,
+			Author:     row.Author.String,
+			Title:      row.Title.String,
+			Year:       int(row.Year.Int32),
+			Genre:      row.Genre.String,
+		}
+	}
+
+	items := make([]models.ChunkItem, 0, len(chunks))
+	for i := range chunks {
+		items = append(items, convertChunkRow(&chunks[i]))
+	}
+
+	respondSuccess(w, http.StatusOK, items)
 }
