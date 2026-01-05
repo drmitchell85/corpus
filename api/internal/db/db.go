@@ -20,6 +20,12 @@ func getConnection() (*sql.DB, error) {
 	return sql.Open("duckdb", config.DBPath+"?access_mode=read_only")
 }
 
+// getWriteConnection opens a new read-write connection to the DuckDB database.
+// Caller is responsible for closing the connection.
+func getWriteConnection() (*sql.DB, error) {
+	return sql.Open("duckdb", config.DBPath)
+}
+
 // SourceExists checks if a source URL has already been ingested.
 func SourceExists(ctx context.Context, sourceURL string) (bool, error) {
 	start := time.Now()
@@ -94,6 +100,107 @@ func HashExists(ctx context.Context, hash string) (bool, error) {
 		"duration_ms", time.Since(start).Milliseconds())
 
 	return exists, nil
+}
+
+// GetSourceURLByID returns the source_url for a given text ID.
+// Returns empty string and sql.ErrNoRows if the ID doesn't exist.
+func GetSourceURLByID(ctx context.Context, id int64) (string, error) {
+	start := time.Now()
+
+	db, err := getConnection()
+	if err != nil {
+		return "", fmt.Errorf("failed to connect to database: %w", err)
+	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			slog.Warn("failed to close database connection",
+				"error", err,
+				"operation", "GetSourceURLByID")
+		}
+	}()
+
+	var sourceURL string
+	err = db.QueryRowContext(ctx,
+		"SELECT source_url FROM texts WHERE id = ? LIMIT 1",
+		id,
+	).Scan(&sourceURL)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			slog.Debug("text ID not found",
+				"operation", "GetSourceURLByID",
+				"id", id,
+				"duration_ms", time.Since(start).Milliseconds())
+		} else {
+			slog.Error("database query failed",
+				"operation", "GetSourceURLByID",
+				"id", id,
+				"error", err,
+				"duration_ms", time.Since(start).Milliseconds())
+		}
+		return "", err
+	}
+
+	slog.Debug("source URL retrieved",
+		"operation", "GetSourceURLByID",
+		"id", id,
+		"duration_ms", time.Since(start).Milliseconds())
+
+	return sourceURL, nil
+}
+
+// DeleteTextBySourceURL deletes all text chunks for a given source_url.
+// Returns the number of chunks deleted (0 if source_url doesn't exist).
+func DeleteTextBySourceURL(ctx context.Context, sourceURL string) (int, error) {
+	if sourceURL == "" {
+		return 0, fmt.Errorf("source_url cannot be empty")
+	}
+
+	start := time.Now()
+
+	db, err := getWriteConnection()
+	if err != nil {
+		return 0, fmt.Errorf("failed to connect to database: %w", err)
+	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			slog.Warn("failed to close database connection",
+				"error", err,
+				"operation", "DeleteTextBySourceURL")
+		}
+	}()
+
+	result, err := db.ExecContext(ctx,
+		"DELETE FROM texts WHERE source_url = ?",
+		sourceURL,
+	)
+
+	if err != nil {
+		slog.Error("delete operation failed",
+			"operation", "DeleteTextBySourceURL",
+			"source_url", sourceURL,
+			"error", err,
+			"duration_ms", time.Since(start).Milliseconds())
+		return 0, err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		slog.Error("failed to get rows affected",
+			"operation", "DeleteTextBySourceURL",
+			"source_url", sourceURL,
+			"error", err,
+			"duration_ms", time.Since(start).Milliseconds())
+		return 0, err
+	}
+
+	duration := time.Since(start)
+	slog.Info("text chunks deleted",
+		"operation", "DeleteTextBySourceURL",
+		"chunks_deleted", rowsAffected,
+		"duration_ms", duration.Milliseconds())
+
+	return int(rowsAffected), nil
 }
 
 // ListTexts returns paginated texts grouped by source_url.

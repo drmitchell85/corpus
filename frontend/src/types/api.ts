@@ -78,6 +78,19 @@ export interface SearchResponse {
   total: number;
 }
 
+/**
+ * Response from DELETE /texts/:id endpoint
+ *
+ * Note: Backend uses int64 for ID, TypeScript uses number (IEEE 754 double).
+ * Safe for IDs up to 2^53-1 (Number.MAX_SAFE_INTEGER = 9007199254740991).
+ */
+export interface DeleteTextResponse {
+  id: number;
+  source_url: string;
+  chunks_deleted: number;
+  message: string;
+}
+
 export interface ErrorResponse {
   status: string;
   message: string;

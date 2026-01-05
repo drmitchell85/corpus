@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import type { TextItem } from '@/types/api';
 
 export interface TextCardProps {
   text: TextItem;
+  onDelete?: (id: number) => void;
+  isDeleting?: boolean;
 }
 
 /**
@@ -34,8 +37,9 @@ function getSourceType(url: string): string {
  * TextCard displays a single text item from the library
  * with metadata and chunk count information.
  */
-export function TextCard({ text }: TextCardProps) {
-  const { title, author, year, genre, chunk_count, source_url } = text;
+export function TextCard({ text, onDelete, isDeleting = false }: TextCardProps) {
+  const { id, title, author, year, genre, chunk_count, source_url } = text;
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const sourceType = getSourceType(source_url);
   const showExternalLink = source_url && !source_url.startsWith('/uploads/') && isSafeUrl(source_url);
@@ -78,6 +82,48 @@ export function TextCard({ text }: TextCardProps) {
           >
             View original source ↗
           </a>
+        </div>
+      )}
+
+      {onDelete && (
+        <div className="text-card__actions">
+          {!showConfirm ? (
+            <button
+              onClick={() => setShowConfirm(true)}
+              disabled={isDeleting}
+              className="text-card__delete-btn"
+              aria-label={`Delete ${title || 'text'}`}
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </button>
+          ) : (
+            <div className="text-card__confirm" role="alertdialog" aria-labelledby="confirm-message">
+              <p id="confirm-message" className="text-card__confirm-message">
+                Delete this text ({chunk_count?.toLocaleString() ?? 0} chunk{chunk_count !== 1 ? 's' : ''})?
+              </p>
+              <div className="text-card__confirm-actions">
+                <button
+                  onClick={() => {
+                    onDelete(id);
+                    setShowConfirm(false);
+                  }}
+                  disabled={isDeleting}
+                  className="text-card__confirm-btn text-card__confirm-btn--danger"
+                  aria-label="Confirm delete"
+                >
+                  Confirm
+                </button>
+                <button
+                  onClick={() => setShowConfirm(false)}
+                  disabled={isDeleting}
+                  className="text-card__confirm-btn text-card__confirm-btn--cancel"
+                  aria-label="Cancel delete"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </article>

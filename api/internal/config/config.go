@@ -32,6 +32,12 @@ func Load() {
 	DBPath = getEnv("DATABASE_PATH", "./corpus.db")
 	EmbedServiceURL = getEnv("EMBED_SERVICE_URL", "http://localhost:8001")
 	UploadPath = getEnv("UPLOAD_PATH", "./uploads")
+
+	// Canonicalize UploadPath to absolute path once at startup
+	// This ensures consistent path resolution regardless of working directory changes
+	if absPath, err := filepath.Abs(UploadPath); err == nil {
+		UploadPath = absPath
+	}
 }
 
 func getEnv(key, fallback string) string {

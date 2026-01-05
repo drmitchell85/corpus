@@ -131,3 +131,62 @@
 - [x] Log PDF extraction in `pdf.py` (file path, page count, time)
 - [x] Log embeddings in `embedder.py` (model load, batch size, throughput)
 - [x] Log database operations in `db.py` (transactions, stored/skipped counts)
+
+## Phase 6: Delete Functionality
+
+### 6.1 Backend — Database Layer ✓
+- [x] Add `getWriteConnection()` helper for read-write database access in `db/db.go`
+- [x] Add `GetSourceURLByID(ctx, id)` function to get source_url from text ID
+- [x] Add `DeleteTextBySourceURL(ctx, sourceURL)` function to delete all chunks
+- [x] Add structured logging for delete operations (chunks_deleted, duration)
+- [x] Handle edge cases (non-existent source_url returns 0, not error)
+
+### 6.2 Backend — API Handler ✓
+- [x] Add `DeleteTextResponse` model to `models/models.go` (id, source_url, chunks_deleted, message)
+- [x] Add `DeleteText` handler to `handler/texts.go` (parse ID, get source_url, delete, respond)
+- [x] Add route `r.Delete("/texts/{id}", handler.DeleteText)` to `router/router.go`
+- [x] Handle errors: 400 for invalid ID format, 404 for not found, 500 for database errors
+- [x] Add request logging with context (request_id, text_id)
+- [x] Handle race condition (chunksDeleted == 0 returns 404)
+- [x] Ensure type consistency (all ID fields are int64)
+
+### 6.3 Backend — PDF Cleanup (Optional Enhancement) ✓
+- [x] Investigate PDF file naming in `handler/upload.go` to understand source_url pattern
+- [x] Add helper to detect if source is uploaded PDF with canonical path validation
+- [x] Add helper to safely delete PDF file with security hardening
+- [x] Delete PDF file from `./uploads/` after successful chunk deletion
+- [x] Log warnings for missing files (don't fail delete operation)
+- [x] Add path traversal protection (canonical path checking)
+- [x] Add symlink and hardlink detection
+- [x] Add TOCTOU race condition protection
+
+### 6.4 Frontend — API Client ✓
+- [x] Add `DeleteTextResponse` type to `types/api.ts`
+- [x] Add `deleteText(id: number)` function to `api/client.ts` (DELETE request)
+- [x] Export `deleteText` from `api/index.ts`
+- [x] Handle errors: ApiError for 404/500, NetworkError for network failures
+- [x] Add client-side input validation (safe positive integer check)
+- [x] Add comprehensive JSDoc documentation with error types
+
+### 6.5 Frontend — Delete Hook ✓
+- [x] Create `hooks/useDeleteText.ts` hook with delete state management
+- [x] Implement `deleteText(id)` with error handling (NetworkError, ApiError 404/500)
+- [x] Add `onSuccess` callback support for triggering refresh after delete
+- [x] Add unmount guard with `mountedRef` pattern (consistent with other hooks)
+- [x] Export hook from `hooks/index.ts`
+
+### 6.6 Frontend — Delete Button UI ✓
+- [x] Add `onDelete` and `isDeleting` props to `TextCard` component
+- [x] Add delete button to `TextCard.tsx` with confirmation dialog
+- [x] Show chunk count in confirmation message ("delete X chunks")
+- [x] Integrate `useDeleteText` hook in `LibraryPage.tsx`
+- [x] Call `refresh()` after successful deletion to update list
+- [x] Display delete errors in error banner with dismiss button
+- [x] Track `deletingId` state to show loading on specific card
+
+### 6.7 Frontend — Styling ✓
+- [x] Add `.text-card__delete-btn` styles (danger color scheme: red)
+- [x] Add hover state (darker red)
+- [x] Add disabled state (gray, cursor not-allowed)
+- [x] Position button appropriately in card layout
+- [x] Ensure accessibility (focus states, keyboard navigation)

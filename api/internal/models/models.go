@@ -28,7 +28,7 @@ type IngestMetadata struct {
 
 // TextRow represents a row from the texts aggregation query.
 type TextRow struct {
-	ID         int
+	ID         int64
 	SourceURL  string
 	Author     sql.NullString
 	Title      sql.NullString
@@ -87,7 +87,7 @@ type StatusResponse struct {
 
 // TextItem represents a single ingested text in the list.
 type TextItem struct {
-	ID         int    `json:"id"`
+	ID         int64  `json:"id"`
 	SourceURL  string `json:"source_url"`
 	Author     string `json:"author,omitempty"`
 	Title      string `json:"title,omitempty"`
@@ -122,4 +122,12 @@ type SearchResponse struct {
 	Query   string         `json:"query"`
 	Results []SearchResult `json:"results"`
 	Total   int            `json:"total"`
+}
+
+// DeleteTextResponse is the JSON response for DELETE /texts/{id}.
+type DeleteTextResponse struct {
+	ID            int64  `json:"id"`
+	SourceURL     string `json:"source_url"`
+	ChunksDeleted int    `json:"chunks_deleted"`
+	Message       string `json:"message"`
 }

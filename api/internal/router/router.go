@@ -25,6 +25,7 @@ func New() *chi.Mux {
 	r.Post("/upload", handler.Upload)
 	r.Get("/ingest/status/{id}", handler.IngestStatus)
 	r.Get("/texts", handler.ListTexts)
+	r.Delete("/texts/{id}", handler.DeleteText)
 	r.Get("/search", handler.Search)
 
 	return r
