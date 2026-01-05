@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { PageLayout } from '@/components';
 import { useChunkContext } from '@/hooks';
 import type { ChunkItem } from '@/types/api';
@@ -10,6 +10,7 @@ const MOBILE_BREAKPOINT = 768; // Match common tablet/mobile breakpoint
 
 export function ChunkPage() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const {
     context,
     isLoading,
@@ -23,6 +24,9 @@ export function ChunkPage() {
 
   // Parse ID from URL params
   const chunkId = id ? parseInt(id, 10) : null;
+
+  // Get search query from URL params (if navigated from search)
+  const searchQuery = searchParams.get('from');
 
   // Detect if we're on mobile
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < MOBILE_BREAKPOINT);
@@ -48,11 +52,14 @@ export function ChunkPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chunkId, fetchContext]);
 
+  // Build back link - restore search query if present
+  const backLink = searchQuery ? `/?q=${encodeURIComponent(searchQuery)}` : '/';
+
   return (
     <PageLayout currentPath="/chunk">
       <div className="chunk-page">
         <nav className="chunk-page__nav">
-          <Link to="/" className="link-back">
+          <Link to={backLink} className="link-back">
             ← Back to Search
           </Link>
         </nav>

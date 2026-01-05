@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { PageLayout, ResultCard, Pagination } from '@/components';
 import { SearchInput } from '@/components/SearchInput';
 import { useSearch } from '@/hooks';
@@ -7,10 +8,28 @@ import type { SearchResult } from '@/types/api';
 const RESULTS_PER_PAGE = 10;
 // Fetch more results for client-side pagination (100 results max)
 const API_FETCH_LIMIT = 100;
+// Query validation (must match SearchInput constraints)
+const MIN_QUERY_LENGTH = 3;
+const MAX_QUERY_LENGTH = 500;
 
 export function SearchPage() {
   const { results, isLoading, error, hasSearched, search } = useSearch();
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Read query from URL on mount and perform search if present
+  useEffect(() => {
+    const queryFromUrl = searchParams.get('q');
+    if (queryFromUrl) {
+      const trimmed = queryFromUrl.trim();
+      // Validate query length (match SearchInput validation)
+      if (trimmed.length >= MIN_QUERY_LENGTH && trimmed.length <= MAX_QUERY_LENGTH) {
+        search(trimmed, API_FETCH_LIMIT);
+      }
+    }
+    // Only run on mount - empty deps intentional
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Reset to page 1 if current page is out of bounds (when results change)
   useEffect(() => {
@@ -20,11 +39,13 @@ export function SearchPage() {
         setCurrentPage(1);
       }
     }
-  }, [results]); // Only depend on results, not currentPage to avoid infinite loop
+  }, [results, currentPage]); // Safe - only sets to 1 when > maxPage
 
   const handleSearch = (query: string) => {
     setCurrentPage(1); // Reset to first page on new search
     search(query, API_FETCH_LIMIT);
+    // Update URL with search query
+    setSearchParams({ q: query });
   };
 
   const handlePageChange = (page: number) => {
@@ -43,7 +64,11 @@ export function SearchPage() {
         phrase, or concept to find related content from the library.
       </p>
 
-      <SearchInput onSearch={handleSearch} isLoading={isLoading} />
+      <SearchInput
+        onSearch={handleSearch}
+        isLoading={isLoading}
+        initialValue={searchParams.get('q') || ''}
+      />
 
       {error && (
         <div className="status status--error" role="alert">

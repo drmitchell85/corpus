@@ -100,7 +100,7 @@
 - [x] Loading states for buttons
 - [x] Smaller initial window on mobile (0 before/after vs 1+1)
 
-### 8.6 Frontend — Search Integration
-- [ ] Make `ResultCard` clickable (wrap text in `Link`)
-- [ ] Navigate to `/chunk/{id}` on click
-- [ ] Preserve search query in URL/state for back navigation
+### 8.6 Frontend — Search Integration ✓
+- [x] Make `ResultCard` clickable (wrap text in `Link`)
+- [x] Navigate to `/chunk/{id}` on click
+- [x] Preserve search query in URL/state for back navigation

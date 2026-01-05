@@ -650,6 +650,24 @@ hr {
   content: none;
 }
 
+.result-card__link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.result-card__link:hover .result-card__text,
+.result-card__link:focus .result-card__text {
+  color: var(--color-link);
+}
+
+.result-card__link:focus {
+  outline: 2px solid var(--color-link);
+  outline-offset: 2px;
+  border-radius: var(--border-radius);
+}
+
 /* ----------------------------------------------------------------------------
    Text Card (Library View)
    ---------------------------------------------------------------------------- */
