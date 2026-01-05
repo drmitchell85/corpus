@@ -193,3 +193,6 @@ When working on roadmap phases:
 3. **Frontend second** - Types, API client, components, pages
 4. **Update ROADMAP.md** - Mark completed items with ✓
 5. **Use scratchpads** - Document in `.claude/scratchpads/WRITER.md` per global workflow
+
+## Suggestions
+I have given you access to a document at the project level located at `.claude/scratchpads/SUGGESTIONS.md`. This is a document for you to use to communicate to me without interrupting your workflow. This is to log any suggestions you have for me that may aid you. If there is a certain tool that you wish you had access to, a different way of going through your workflow, etc. please log it here. Keep suggestions concise, to the point. Do not clutter the document.

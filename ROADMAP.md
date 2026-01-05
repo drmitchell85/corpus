@@ -73,17 +73,17 @@
 - [x] Add `GET /chunks/{id}/context` handler in `handler/chunks.go`
 - [x] Register route in `router/router.go`
 
-### 8.2 Backend — Pagination Endpoints
-- [ ] Add `GET /chunks/{id}/before?limit=3` endpoint
-- [ ] Add `GET /chunks/{id}/after?limit=3` endpoint
-- [ ] Use `chunk_index` for efficient range queries
-- [ ] Return chunks ordered appropriately (before: DESC, after: ASC)
+### 8.2 Backend — Pagination Endpoints ✓
+- [x] Add `GET /chunks/{id}/before?limit=3` endpoint
+- [x] Add `GET /chunks/{id}/after?limit=3` endpoint
+- [x] Use `chunk_index` for efficient range queries
+- [x] Return chunks ordered appropriately (before: DESC, after: ASC)
 
-### 8.3 Frontend — API Client
-- [ ] Add `ChunkContext` type to `types/api.ts`
-- [ ] Add `getChunkContext(id, window)` function to `api/client.ts`
-- [ ] Add `getChunksBefore(id, limit)` function
-- [ ] Add `getChunksAfter(id, limit)` function
+### 8.3 Frontend — API Client ✓
+- [x] Add `ChunkContext` type to `types/api.ts`
+- [x] Add `getChunkContext(id, window)` function to `api/client.ts`
+- [x] Add `getChunksBefore(id, limit)` function
+- [x] Add `getChunksAfter(id, limit)` function
 
 ### 8.4 Frontend — Chunk Page
 - [ ] Add `/chunk/:id` route to `App.tsx`
