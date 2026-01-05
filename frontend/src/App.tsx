@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { SearchPage, LibraryPage, IngestPage, UploadPage } from '@/pages';
+import { SearchPage, LibraryPage, IngestPage, UploadPage, ChunkPage } from '@/pages';
 
 function App() {
   return (
@@ -9,6 +9,7 @@ function App() {
         <Route path="/library" element={<LibraryPage />} />
         <Route path="/ingest" element={<IngestPage />} />
         <Route path="/upload" element={<UploadPage />} />
+        <Route path="/chunk/:id" element={<ChunkPage />} />
         {/* Redirect unknown routes to home */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

@@ -8,6 +8,9 @@ export {
   listTexts,
   searchTexts,
   deleteText,
+  getChunkContext,
+  getChunksBefore,
+  getChunksAfter,
 } from './client.ts';
 
 export type * from '@/types/api.ts';

@@ -85,13 +85,13 @@
 - [x] Add `getChunksBefore(id, limit)` function
 - [x] Add `getChunksAfter(id, limit)` function
 
-### 8.4 Frontend — Chunk Page
-- [ ] Add `/chunk/:id` route to `App.tsx`
-- [ ] Create `ChunkPage.tsx` component
-- [ ] Create `useChunkContext` hook with state management
-- [ ] Display current chunk (highlighted) + neighbors
-- [ ] Show metadata header (title, author, year, position)
-- [ ] Add "Back to Search" navigation
+### 8.4 Frontend — Chunk Page ✓
+- [x] Add `/chunk/:id` route to `App.tsx`
+- [x] Create `ChunkPage.tsx` component
+- [x] Create `useChunkContext` hook with state management
+- [x] Display current chunk (highlighted) + neighbors
+- [x] Show metadata header (title, author, year, position)
+- [x] Add "Back to Search" navigation
 
 ### 8.5 Frontend — Load More
 - [ ] Add "Load previous" button (above chunks, hidden if `!has_more_before`)
