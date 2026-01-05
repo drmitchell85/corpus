@@ -70,12 +70,14 @@ def init_schema() -> None:
                 title VARCHAR,
                 year INTEGER,
                 genre VARCHAR,
+                chunk_index INTEGER,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 hash VARCHAR UNIQUE
             )
         """)
         conn.execute("CREATE INDEX IF NOT EXISTS idx_year ON texts(year)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_genre ON texts(genre)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_source_chunk ON texts(source_url, chunk_index)")
 
 
 def generate_hash(text: str) -> str:
@@ -114,10 +116,11 @@ def insert_chunk(
     text: str,
     embedding: np.ndarray,
     source_url: str,
-    author: str = None,
-    title: str = None,
-    year: int = None,
-    genre: str = None,
+    chunk_index: int | None = None,
+    author: str | None = None,
+    title: str | None = None,
+    year: int | None = None,
+    genre: str | None = None,
 ) -> bool:
     """Insert a single text chunk into the database.
 
@@ -126,6 +129,7 @@ def insert_chunk(
         text: The text chunk
         embedding: 384-dim numpy array
         source_url: URL or path where text was sourced
+        chunk_index: 0-based position of chunk within source (optional)
         author: Author name (optional)
         title: Work title (optional)
         year: Publication year (optional)
@@ -142,10 +146,10 @@ def insert_chunk(
 
     conn.execute(
         """
-        INSERT INTO texts (source_url, text, embedding, author, title, year, genre, hash)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO texts (source_url, text, embedding, author, title, year, genre, chunk_index, hash)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
-        [source_url, text, embedding.tolist(), author, title, year, genre, text_hash]
+        [source_url, text, embedding.tolist(), author, title, year, genre, chunk_index, text_hash]
     )
     return True
 
@@ -154,11 +158,12 @@ def store_chunks(
     chunks: list[str],
     embeddings: list[np.ndarray],
     source_url: str,
-    author: str = None,
-    title: str = None,
-    year: int = None,
-    genre: str = None,
-    job_id: str = None,
+    chunk_indices: list[int] | None = None,
+    author: str | None = None,
+    title: str | None = None,
+    year: int | None = None,
+    genre: str | None = None,
+    job_id: str | None = None,
 ) -> StoreResult:
     """Store multiple text chunks with their embeddings.
 
@@ -168,6 +173,7 @@ def store_chunks(
         chunks: List of text chunks
         embeddings: List of 384-dim numpy arrays
         source_url: URL or path where text was sourced
+        chunk_indices: List of 0-based indices (optional, must match chunk count if provided)
         author: Author name (optional)
         title: Work title (optional)
         year: Publication year (optional)
@@ -177,7 +183,7 @@ def store_chunks(
         StoreResult with stored and skipped counts
 
     Raises:
-        ValueError: If chunks and embeddings have different lengths
+        ValueError: If chunks and embeddings have different lengths, or if chunk_indices length mismatches
         DatabaseError: If the transaction fails
     """
     if len(chunks) != len(embeddings):
@@ -190,6 +196,17 @@ def store_chunks(
             }
         )
         raise ValueError("chunks and embeddings must have same length")
+
+    if chunk_indices is not None and len(chunk_indices) != len(chunks):
+        logger.error(
+            "Chunk indices count mismatch",
+            extra={
+                "job_id": job_id,
+                "chunk_count": len(chunks),
+                "indices_count": len(chunk_indices),
+            }
+        )
+        raise ValueError("chunk_indices must have same length as chunks")
 
     start_time = time.time()
     logger.debug(
@@ -211,8 +228,9 @@ def store_chunks(
             stored = 0
             skipped = 0
 
-            for text, embedding in zip(chunks, embeddings):
-                if insert_chunk(conn, text, embedding, source_url, author, title, year, genre):
+            for i, (text, embedding) in enumerate(zip(chunks, embeddings)):
+                chunk_index = chunk_indices[i] if (chunk_indices and i < len(chunk_indices)) else None
+                if insert_chunk(conn, text, embedding, source_url, chunk_index, author, title, year, genre):
                     stored += 1
                 else:
                     skipped += 1

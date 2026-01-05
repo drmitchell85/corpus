@@ -189,10 +189,12 @@ def process_text(self, job_id: str, source_type: str, source_url: str = None,
         # Step 4: Store in DuckDB
         store_start = time.time()
         logger.debug("Storing chunks in database", extra={"job_id": job_id, "chunk_count": len(chunks)})
+        chunk_indices = list(range(len(chunks)))  # 0-based sequential indices
         result = store_chunks(
             chunks=chunks,
             embeddings=embeddings,
             source_url=source_url or pdf_path,
+            chunk_indices=chunk_indices,
             author=metadata.get("author"),
             title=metadata.get("title"),
             year=metadata.get("year"),
