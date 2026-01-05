@@ -23,6 +23,8 @@ uploads/
 # Go
 api/corpus-api
 api/main
+bin/
+*.log
 
 # Claude
 .claude

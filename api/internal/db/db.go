@@ -436,7 +436,7 @@ func GetChunkContext(ctx context.Context, id int, window int) (*ChunkContext, er
 		WHERE source_url = ? AND chunk_index < ?
 		ORDER BY chunk_index DESC
 		LIMIT ?
-	`, current.SourceURL, current.ChunkIndex, window)
+	`, current.SourceURL, current.ChunkIndex.Int32, window)
 
 	if err != nil {
 		slog.Error("database query failed",
@@ -473,7 +473,7 @@ func GetChunkContext(ctx context.Context, id int, window int) (*ChunkContext, er
 		WHERE source_url = ? AND chunk_index > ?
 		ORDER BY chunk_index ASC
 		LIMIT ?
-	`, current.SourceURL, current.ChunkIndex, window)
+	`, current.SourceURL, current.ChunkIndex.Int32, window)
 
 	if err != nil {
 		slog.Error("database query failed",
@@ -499,8 +499,9 @@ func GetChunkContext(ctx context.Context, id int, window int) (*ChunkContext, er
 	}
 
 	// Calculate has_more flags
-	hasMoreBefore := current.ChunkIndex > len(beforeChunks)
-	hasMoreAfter := current.ChunkIndex+len(afterChunks)+1 < totalChunks
+	chunkIdx := int(current.ChunkIndex.Int32)
+	hasMoreBefore := chunkIdx > len(beforeChunks)
+	hasMoreAfter := chunkIdx+len(afterChunks)+1 < totalChunks
 
 	duration := time.Since(start)
 	slog.Info("chunk context retrieved",
@@ -571,7 +572,7 @@ func GetChunksBefore(ctx context.Context, id int, limit int) ([]models.ChunkRow,
 		WHERE source_url = ? AND chunk_index < ?
 		ORDER BY chunk_index DESC
 		LIMIT ?
-	`, current.SourceURL, current.ChunkIndex, limit)
+	`, current.SourceURL, current.ChunkIndex.Int32, limit)
 
 	if err != nil {
 		slog.Error("database query failed",
@@ -661,7 +662,7 @@ func GetChunksAfter(ctx context.Context, id int, limit int) ([]models.ChunkRow, 
 		WHERE source_url = ? AND chunk_index > ?
 		ORDER BY chunk_index ASC
 		LIMIT ?
-	`, current.SourceURL, current.ChunkIndex, limit)
+	`, current.SourceURL, current.ChunkIndex.Int32, limit)
 
 	if err != nil {
 		slog.Error("database query failed",

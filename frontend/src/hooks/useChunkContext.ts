@@ -50,6 +50,8 @@ export function useChunkContext(): UseChunkContextReturn {
       setState({
         context,
         isLoading: false,
+        isLoadingBefore: false,
+        isLoadingAfter: false,
         error: null,
       });
     } catch (err) {
@@ -89,44 +91,31 @@ export function useChunkContext(): UseChunkContextReturn {
   }, []);
 
   const loadMoreBefore = useCallback(async (limit: number = 3) => {
-    // Use setState to check guards with current state and get chunk ID
-    // This avoids stale closure issues with accessing state.context directly
-    let shouldProceed = false;
-    let earliestChunkId: number | null = null;
+    // Check guards and get chunk ID from current state
+    if (!state.context) {
+      return;
+    }
 
-    setState((prev) => {
-      // Cannot load more if no context loaded yet
-      if (!prev.context) {
-        return prev;
-      }
+    if (state.isLoadingBefore) {
+      return;
+    }
 
-      // Cannot load more if already loading
-      if (prev.isLoadingBefore) {
-        return prev;
-      }
+    if (!state.context.has_more_before) {
+      return;
+    }
 
-      // Cannot load more if no more chunks before
-      if (!prev.context.has_more_before) {
-        return prev;
-      }
+    // Get the earliest chunk we currently have
+    const earliestChunk = state.context.before_chunks.length > 0
+      ? state.context.before_chunks[0]
+      : state.context.current_chunk;
 
-      // Get the earliest chunk we currently have
-      const earliestChunk = prev.context.before_chunks.length > 0
-        ? prev.context.before_chunks[0]
-        : prev.context.current_chunk;
+    const earliestChunkId = earliestChunk.id;
 
-      // Signal that we should proceed with fetch
-      shouldProceed = true;
-      earliestChunkId = earliestChunk.id;
-
-      return {
-        ...prev,
-        isLoadingBefore: true,
-      };
-    });
-
-    // Early exit if guards failed
-    if (!shouldProceed || !earliestChunkId) return;
+    // Set loading state
+    setState((prev) => ({
+      ...prev,
+      isLoadingBefore: true,
+    }));
 
     try {
       // Fetch chunks that come before the earliest chunk
@@ -139,14 +128,21 @@ export function useChunkContext(): UseChunkContextReturn {
       setState((prev) => {
         if (!prev.context) return prev;
 
+        // Calculate has_more_before: check if the earliest chunk we now have is at index 0
+        const earliestChunkIndex = newChunks.length > 0
+          ? newChunks[0].chunk_index
+          : (prev.context.before_chunks.length > 0 ? prev.context.before_chunks[0].chunk_index : prev.context.current_chunk.chunk_index);
+
+        const hasMoreBefore = earliestChunkIndex > 0;
+
         return {
           ...prev,
           isLoadingBefore: false,
           context: {
             ...prev.context,
             before_chunks: [...newChunks, ...prev.context.before_chunks],
-            // Update has_more_before: if we got fewer chunks than requested, no more
-            has_more_before: newChunks.length === limit,
+            // Update has_more_before: if earliest chunk is at index 0, we're at the start
+            has_more_before: hasMoreBefore,
           },
         };
       });
@@ -160,50 +156,37 @@ export function useChunkContext(): UseChunkContextReturn {
         isLoadingBefore: false,
       }));
 
-      // Log error for debugging
+      // Log error for debugging (in production, send to error tracking service)
       console.error('Error loading more chunks before:', err);
     }
-  }, []); // Empty deps - all guards use current state via setState
+  }, [state]); // Depend on state to access current values
 
   const loadMoreAfter = useCallback(async (limit: number = 3) => {
-    // Use setState to check guards with current state and get chunk ID
-    // This avoids stale closure issues with accessing state.context directly
-    let shouldProceed = false;
-    let latestChunkId: number | null = null;
+    // Check guards and get chunk ID from current state
+    if (!state.context) {
+      return;
+    }
 
-    setState((prev) => {
-      // Cannot load more if no context loaded yet
-      if (!prev.context) {
-        return prev;
-      }
+    if (state.isLoadingAfter) {
+      return;
+    }
 
-      // Cannot load more if already loading
-      if (prev.isLoadingAfter) {
-        return prev;
-      }
+    if (!state.context.has_more_after) {
+      return;
+    }
 
-      // Cannot load more if no more chunks after
-      if (!prev.context.has_more_after) {
-        return prev;
-      }
+    // Get the latest chunk we currently have
+    const latestChunk = state.context.after_chunks.length > 0
+      ? state.context.after_chunks[state.context.after_chunks.length - 1]
+      : state.context.current_chunk;
 
-      // Get the latest chunk we currently have
-      const latestChunk = prev.context.after_chunks.length > 0
-        ? prev.context.after_chunks[prev.context.after_chunks.length - 1]
-        : prev.context.current_chunk;
+    const latestChunkId = latestChunk.id;
 
-      // Signal that we should proceed with fetch
-      shouldProceed = true;
-      latestChunkId = latestChunk.id;
-
-      return {
-        ...prev,
-        isLoadingAfter: true,
-      };
-    });
-
-    // Early exit if guards failed
-    if (!shouldProceed || !latestChunkId) return;
+    // Set loading state
+    setState((prev) => ({
+      ...prev,
+      isLoadingAfter: true,
+    }));
 
     try {
       // Fetch chunks that come after the latest chunk
@@ -216,14 +199,23 @@ export function useChunkContext(): UseChunkContextReturn {
       setState((prev) => {
         if (!prev.context) return prev;
 
+        // Calculate has_more_after: check if the latest chunk we now have is the last chunk in the document
+        const latestChunkIndex = newChunks.length > 0
+          ? newChunks[newChunks.length - 1].chunk_index
+          : (prev.context.after_chunks.length > 0
+              ? prev.context.after_chunks[prev.context.after_chunks.length - 1].chunk_index
+              : prev.context.current_chunk.chunk_index);
+
+        const hasMoreAfter = latestChunkIndex < prev.context.total_chunks - 1;
+
         return {
           ...prev,
           isLoadingAfter: false,
           context: {
             ...prev.context,
             after_chunks: [...prev.context.after_chunks, ...newChunks],
-            // Update has_more_after: if we got fewer chunks than requested, no more
-            has_more_after: newChunks.length === limit,
+            // Update has_more_after: if latest chunk is the last in the document, we're at the end
+            has_more_after: hasMoreAfter,
           },
         };
       });
@@ -237,10 +229,10 @@ export function useChunkContext(): UseChunkContextReturn {
         isLoadingAfter: false,
       }));
 
-      // Log error for debugging
+      // Log error for debugging (in production, send to error tracking service)
       console.error('Error loading more chunks after:', err);
     }
-  }, []); // Empty deps - all guards use current state via setState
+  }, [state]); // Depend on state to access current values
 
   return {
     ...state,

@@ -53,7 +53,7 @@ type SearchRow struct {
 type ChunkRow struct {
 	ID         int
 	Text       string
-	ChunkIndex int
+	ChunkIndex sql.NullInt32 // Nullable to handle chunks ingested before Phase 7
 	SourceURL  string
 	Author     sql.NullString
 	Title      sql.NullString

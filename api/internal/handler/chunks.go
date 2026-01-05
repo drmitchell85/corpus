@@ -83,7 +83,7 @@ func GetChunkContext(w http.ResponseWriter, r *http.Request) {
 		return models.ChunkItem{
 			ID:         row.ID,
 			Text:       row.Text,
-			ChunkIndex: row.ChunkIndex,
+			ChunkIndex: int(row.ChunkIndex.Int32),
 			SourceURL:  row.SourceURL,
 			Author:     row.Author.String,
 			Title:      row.Title.String,
@@ -111,7 +111,7 @@ func GetChunkContext(w http.ResponseWriter, r *http.Request) {
 		TotalChunks:    context.TotalChunks,
 		HasMoreBefore:  context.HasMoreBefore,
 		HasMoreAfter:   context.HasMoreAfter,
-		CurrentIndex:   context.CurrentChunk.ChunkIndex,
+		CurrentIndex:   int(context.CurrentChunk.ChunkIndex.Int32),
 		SourceURL:      context.CurrentChunk.SourceURL,
 		Author:         context.CurrentChunk.Author.String,
 		Title:          context.CurrentChunk.Title.String,
@@ -181,7 +181,7 @@ func GetChunksBefore(w http.ResponseWriter, r *http.Request) {
 		return models.ChunkItem{
 			ID:         row.ID,
 			Text:       row.Text,
-			ChunkIndex: row.ChunkIndex,
+			ChunkIndex: int(row.ChunkIndex.Int32),
 			SourceURL:  row.SourceURL,
 			Author:     row.Author.String,
 			Title:      row.Title.String,
@@ -259,7 +259,7 @@ func GetChunksAfter(w http.ResponseWriter, r *http.Request) {
 		return models.ChunkItem{
 			ID:         row.ID,
 			Text:       row.Text,
-			ChunkIndex: row.ChunkIndex,
+			ChunkIndex: int(row.ChunkIndex.Int32),
 			SourceURL:  row.SourceURL,
 			Author:     row.Author.String,
 			Title:      row.Title.String,
