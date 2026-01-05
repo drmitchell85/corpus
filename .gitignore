@@ -1,5 +1,5 @@
 # Database
-corpus.db
+*.db
 
 # Python
 __pycache__/
@@ -8,6 +8,7 @@ __pycache__/
 venv/
 .venv/
 *.egg-info/
+.pytest_cache/
 
 # Uploads
 uploads/
