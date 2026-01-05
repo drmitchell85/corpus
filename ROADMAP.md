@@ -53,9 +53,9 @@
 - [x] Create index on `(source_url, chunk_index)` for efficient ordering queries
 - [x] Update `store_chunks()` to accept and store chunk indices
 
-### 7.2 Worker Updates
-- [ ] Update `worker.py` to pass chunk indices (enumerate during processing)
-- [ ] Ensure indices are 0-based, sequential within each source
+### 7.2 Worker Updates ✓
+- [x] Update `worker.py` to pass chunk indices (enumerate during processing)
+- [x] Ensure indices are 0-based, sequential within each source
 
 ### 7.3 Backfill Existing Data
 - [ ] Add migration script to assign `chunk_index` to existing chunks
