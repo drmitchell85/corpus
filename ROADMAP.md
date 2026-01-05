@@ -184,9 +184,9 @@
 - [x] Display delete errors in error banner with dismiss button
 - [x] Track `deletingId` state to show loading on specific card
 
-### 6.7 Frontend — Styling
-- [ ] Add `.text-card__delete-btn` styles (danger color scheme: red)
-- [ ] Add hover state (darker red)
-- [ ] Add disabled state (gray, cursor not-allowed)
-- [ ] Position button appropriately in card layout
-- [ ] Ensure accessibility (focus states, keyboard navigation)
+### 6.7 Frontend — Styling ✓
+- [x] Add `.text-card__delete-btn` styles (danger color scheme: red)
+- [x] Add hover state (darker red)
+- [x] Add disabled state (gray, cursor not-allowed)
+- [x] Position button appropriately in card layout
+- [x] Ensure accessibility (focus states, keyboard navigation)
