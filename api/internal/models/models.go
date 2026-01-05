@@ -49,6 +49,18 @@ type SearchRow struct {
 	Genre     sql.NullString
 }
 
+// ChunkRow represents a row from the chunk context query.
+type ChunkRow struct {
+	ID         int
+	Text       string
+	ChunkIndex sql.NullInt32 // Nullable to handle chunks ingested before Phase 7
+	SourceURL  string
+	Author     sql.NullString
+	Title      sql.NullString
+	Year       sql.NullInt32
+	Genre      sql.NullString
+}
+
 // ============================================================================
 // API Request Types
 // ============================================================================
@@ -130,4 +142,32 @@ type DeleteTextResponse struct {
 	SourceURL     string `json:"source_url"`
 	ChunksDeleted int    `json:"chunks_deleted"`
 	Message       string `json:"message"`
+}
+
+// ChunkItem represents a single chunk with its metadata.
+type ChunkItem struct {
+	ID         int    `json:"id"`
+	Text       string `json:"text"`
+	ChunkIndex int    `json:"chunk_index"`
+	SourceURL  string `json:"source_url"`
+	Author     string `json:"author,omitempty"`
+	Title      string `json:"title,omitempty"`
+	Year       int    `json:"year,omitempty"`
+	Genre      string `json:"genre,omitempty"`
+}
+
+// ChunkContextResponse is the JSON response for GET /chunks/{id}/context.
+type ChunkContextResponse struct {
+	CurrentChunk   ChunkItem   `json:"current_chunk"`
+	BeforeChunks   []ChunkItem `json:"before_chunks"`
+	AfterChunks    []ChunkItem `json:"after_chunks"`
+	TotalChunks    int         `json:"total_chunks"`
+	HasMoreBefore  bool        `json:"has_more_before"`
+	HasMoreAfter   bool        `json:"has_more_after"`
+	CurrentIndex   int         `json:"current_index"`
+	SourceURL      string      `json:"source_url"`
+	Author         string      `json:"author,omitempty"`
+	Title          string      `json:"title,omitempty"`
+	Year           int         `json:"year,omitempty"`
+	Genre          string      `json:"genre,omitempty"`
 }

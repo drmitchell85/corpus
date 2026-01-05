@@ -64,43 +64,43 @@
 
 ## Phase 8: Chunk Detail Page
 
-### 8.1 Backend — Context Endpoint
-- [ ] Add `GetChunkContext(ctx, id, window)` to `db/db.go`
-- [ ] Query current chunk, count total chunks for source
-- [ ] Query before/after chunks using `chunk_index` ordering
-- [ ] Return `has_more_before`, `has_more_after` flags
-- [ ] Add `ChunkContextResponse` model to `models/models.go`
-- [ ] Add `GET /chunks/{id}/context` handler in `handler/chunks.go`
-- [ ] Register route in `router/router.go`
+### 8.1 Backend — Context Endpoint ✓
+- [x] Add `GetChunkContext(ctx, id, window)` to `db/db.go`
+- [x] Query current chunk, count total chunks for source
+- [x] Query before/after chunks using `chunk_index` ordering
+- [x] Return `has_more_before`, `has_more_after` flags
+- [x] Add `ChunkContextResponse` model to `models/models.go`
+- [x] Add `GET /chunks/{id}/context` handler in `handler/chunks.go`
+- [x] Register route in `router/router.go`
 
-### 8.2 Backend — Pagination Endpoints
-- [ ] Add `GET /chunks/{id}/before?limit=3` endpoint
-- [ ] Add `GET /chunks/{id}/after?limit=3` endpoint
-- [ ] Use `chunk_index` for efficient range queries
-- [ ] Return chunks ordered appropriately (before: DESC, after: ASC)
+### 8.2 Backend — Pagination Endpoints ✓
+- [x] Add `GET /chunks/{id}/before?limit=3` endpoint
+- [x] Add `GET /chunks/{id}/after?limit=3` endpoint
+- [x] Use `chunk_index` for efficient range queries
+- [x] Return chunks ordered appropriately (before: DESC, after: ASC)
 
-### 8.3 Frontend — API Client
-- [ ] Add `ChunkContext` type to `types/api.ts`
-- [ ] Add `getChunkContext(id, window)` function to `api/client.ts`
-- [ ] Add `getChunksBefore(id, limit)` function
-- [ ] Add `getChunksAfter(id, limit)` function
+### 8.3 Frontend — API Client ✓
+- [x] Add `ChunkContext` type to `types/api.ts`
+- [x] Add `getChunkContext(id, window)` function to `api/client.ts`
+- [x] Add `getChunksBefore(id, limit)` function
+- [x] Add `getChunksAfter(id, limit)` function
 
-### 8.4 Frontend — Chunk Page
-- [ ] Add `/chunk/:id` route to `App.tsx`
-- [ ] Create `ChunkPage.tsx` component
-- [ ] Create `useChunkContext` hook with state management
-- [ ] Display current chunk (highlighted) + neighbors
-- [ ] Show metadata header (title, author, year, position)
-- [ ] Add "Back to Search" navigation
+### 8.4 Frontend — Chunk Page ✓
+- [x] Add `/chunk/:id` route to `App.tsx`
+- [x] Create `ChunkPage.tsx` component
+- [x] Create `useChunkContext` hook with state management
+- [x] Display current chunk (highlighted) + neighbors
+- [x] Show metadata header (title, author, year, position)
+- [x] Add "Back to Search" navigation
 
-### 8.5 Frontend — Load More
-- [ ] Add "Load previous" button (above chunks, hidden if `!has_more_before`)
-- [ ] Add "Load more" button (below chunks, hidden if `!has_more_after`)
-- [ ] Implement chunk prepending/appending to state
-- [ ] Loading states for buttons
-- [ ] Smaller initial window on mobile (0 before/after vs 1+1)
+### 8.5 Frontend — Load More ✓
+- [x] Add "Load previous" button (above chunks, hidden if `!has_more_before`)
+- [x] Add "Load more" button (below chunks, hidden if `!has_more_after`)
+- [x] Implement chunk prepending/appending to state
+- [x] Loading states for buttons
+- [x] Smaller initial window on mobile (0 before/after vs 1+1)
 
-### 8.6 Frontend — Search Integration
-- [ ] Make `ResultCard` clickable (wrap text in `Link`)
-- [ ] Navigate to `/chunk/{id}` on click
-- [ ] Preserve search query in URL/state for back navigation
+### 8.6 Frontend — Search Integration ✓
+- [x] Make `ResultCard` clickable (wrap text in `Link`)
+- [x] Navigate to `/chunk/{id}` on click
+- [x] Preserve search query in URL/state for back navigation

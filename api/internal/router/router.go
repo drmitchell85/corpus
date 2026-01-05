@@ -27,6 +27,9 @@ func New() *chi.Mux {
 	r.Get("/texts", handler.ListTexts)
 	r.Delete("/texts/{id}", handler.DeleteText)
 	r.Get("/search", handler.Search)
+	r.Get("/chunks/{id}/context", handler.GetChunkContext)
+	r.Get("/chunks/{id}/before", handler.GetChunksBefore)
+	r.Get("/chunks/{id}/after", handler.GetChunksAfter)
 
 	return r
 }

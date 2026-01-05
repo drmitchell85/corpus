@@ -6,3 +6,6 @@ export type { UseTextsReturn } from './useTexts';
 
 export { useDeleteText } from './useDeleteText';
 export type { UseDeleteTextReturn } from './useDeleteText';
+
+export { useChunkContext } from './useChunkContext';
+export type { UseChunkContextReturn } from './useChunkContext';

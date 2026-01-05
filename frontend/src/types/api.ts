@@ -99,3 +99,29 @@ export interface ErrorResponse {
 export interface HealthResponse {
   status: string;
 }
+
+export interface ChunkItem {
+  id: number;
+  text: string;
+  chunk_index: number;
+  source_url: string;
+  author?: string;
+  title?: string;
+  year?: number;
+  genre?: string;
+}
+
+export interface ChunkContext {
+  current_chunk: ChunkItem;
+  before_chunks: ChunkItem[];
+  after_chunks: ChunkItem[];
+  total_chunks: number;
+  has_more_before: boolean;
+  has_more_after: boolean;
+  current_index: number;
+  source_url: string;
+  author?: string;
+  title?: string;
+  year?: number;
+  genre?: string;
+}

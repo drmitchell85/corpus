@@ -8,6 +8,8 @@ import type {
   DeleteTextResponse,
   HealthResponse,
   ErrorResponse,
+  ChunkContext,
+  ChunkItem,
 } from '@/types/api.ts';
 
 const API_BASE = '/api';
@@ -229,6 +231,105 @@ export async function deleteText(id: number): Promise<DeleteTextResponse> {
       method: 'DELETE',
     });
     return handleResponse<DeleteTextResponse>(response);
+  } catch (err) {
+    if (err instanceof ApiError) {
+      throw err;
+    }
+    throw new NetworkError('Network request failed. Check your connection.', err);
+  }
+}
+
+/**
+ * Get chunk context with surrounding chunks
+ *
+ * @param id - The chunk ID (must be a positive integer)
+ * @param window - Number of chunks before/after to fetch (default: 1, max: 10)
+ * @returns Promise resolving to chunk context with current, before, and after chunks
+ * @throws {Error} If the ID is not a valid positive integer (client-side validation)
+ * @throws {ApiError} If the chunk is not found (404) or server error (500)
+ * @throws {NetworkError} If the network request fails
+ */
+export async function getChunkContext(
+  id: number,
+  window: number = 1
+): Promise<ChunkContext> {
+  // Validate ID is a safe positive integer
+  if (!Number.isSafeInteger(id) || id <= 0) {
+    throw new Error('Invalid chunk ID: must be a positive integer');
+  }
+
+  try {
+    const params = new URLSearchParams({
+      window: window.toString(),
+    });
+    const response = await fetch(`${API_BASE}/chunks/${id}/context?${params}`);
+    return handleResponse<ChunkContext>(response);
+  } catch (err) {
+    if (err instanceof ApiError) {
+      throw err;
+    }
+    throw new NetworkError('Network request failed. Check your connection.', err);
+  }
+}
+
+/**
+ * Get chunks that come before the given chunk
+ *
+ * @param id - The chunk ID (must be a positive integer)
+ * @param limit - Maximum number of chunks to fetch (default: 3, max: 10)
+ * @returns Promise resolving to array of chunks in chronological order
+ * @throws {Error} If the ID is not a valid positive integer (client-side validation)
+ * @throws {ApiError} If the chunk is not found (404) or server error (500)
+ * @throws {NetworkError} If the network request fails
+ */
+export async function getChunksBefore(
+  id: number,
+  limit: number = 3
+): Promise<ChunkItem[]> {
+  // Validate ID is a safe positive integer
+  if (!Number.isSafeInteger(id) || id <= 0) {
+    throw new Error('Invalid chunk ID: must be a positive integer');
+  }
+
+  try {
+    const params = new URLSearchParams({
+      limit: limit.toString(),
+    });
+    const response = await fetch(`${API_BASE}/chunks/${id}/before?${params}`);
+    return handleResponse<ChunkItem[]>(response);
+  } catch (err) {
+    if (err instanceof ApiError) {
+      throw err;
+    }
+    throw new NetworkError('Network request failed. Check your connection.', err);
+  }
+}
+
+/**
+ * Get chunks that come after the given chunk
+ *
+ * @param id - The chunk ID (must be a positive integer)
+ * @param limit - Maximum number of chunks to fetch (default: 3, max: 10)
+ * @returns Promise resolving to array of chunks in chronological order
+ * @throws {Error} If the ID is not a valid positive integer (client-side validation)
+ * @throws {ApiError} If the chunk is not found (404) or server error (500)
+ * @throws {NetworkError} If the network request fails
+ */
+export async function getChunksAfter(
+  id: number,
+  limit: number = 3
+): Promise<ChunkItem[]> {
+  // Validate ID is a safe positive integer
+  if (!Number.isSafeInteger(id) || id <= 0) {
+    throw new Error('Invalid chunk ID: must be a positive integer');
+  }
+
+  try {
+    const params = new URLSearchParams({
+      limit: limit.toString(),
+    });
+    const response = await fetch(`${API_BASE}/chunks/${id}/after?${params}`);
+    return handleResponse<ChunkItem[]>(response);
   } catch (err) {
     if (err instanceof ApiError) {
       throw err;

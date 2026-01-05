@@ -360,3 +360,340 @@ func floatsToArrayLiteral(floats []float32) string {
 	}
 	return "[" + strings.Join(strs, ",") + "]"
 }
+
+// ChunkContext holds the result of GetChunkContext.
+type ChunkContext struct {
+	CurrentChunk  *models.ChunkRow
+	BeforeChunks  []models.ChunkRow
+	AfterChunks   []models.ChunkRow
+	TotalChunks   int
+	HasMoreBefore bool
+	HasMoreAfter  bool
+}
+
+// GetChunkContext retrieves a chunk with surrounding context (before/after chunks).
+// The window parameter controls how many chunks to retrieve before and after.
+func GetChunkContext(ctx context.Context, id int, window int) (*ChunkContext, error) {
+	start := time.Now()
+
+	db, err := getConnection()
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
+	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			slog.Warn("failed to close database connection",
+				"error", err,
+				"operation", "GetChunkContext")
+		}
+	}()
+
+	// Get the current chunk
+	var current models.ChunkRow
+	err = db.QueryRowContext(ctx, `
+		SELECT id, text, chunk_index, source_url, author, title, year, genre
+		FROM texts
+		WHERE id = ?
+	`, id).Scan(&current.ID, &current.Text, &current.ChunkIndex, &current.SourceURL,
+		&current.Author, &current.Title, &current.Year, &current.Genre)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			slog.Debug("chunk not found",
+				"operation", "GetChunkContext",
+				"id", id,
+				"duration_ms", time.Since(start).Milliseconds())
+			return nil, sql.ErrNoRows
+		}
+		slog.Error("database query failed",
+			"operation", "GetChunkContext",
+			"id", id,
+			"error", err,
+			"duration_ms", time.Since(start).Milliseconds())
+		return nil, err
+	}
+
+	// Get total chunk count for this source
+	var totalChunks int
+	err = db.QueryRowContext(ctx, `
+		SELECT COUNT(*)
+		FROM texts
+		WHERE source_url = ?
+	`, current.SourceURL).Scan(&totalChunks)
+
+	if err != nil {
+		slog.Error("database query failed",
+			"operation", "GetChunkContext",
+			"error", err,
+			"duration_ms", time.Since(start).Milliseconds())
+		return nil, err
+	}
+
+	// Get chunks before (order DESC to get most recent first, then reverse)
+	beforeRows, err := db.QueryContext(ctx, `
+		SELECT id, text, chunk_index, source_url, author, title, year, genre
+		FROM texts
+		WHERE source_url = ? AND chunk_index < ?
+		ORDER BY chunk_index DESC
+		LIMIT ?
+	`, current.SourceURL, current.ChunkIndex.Int32, window)
+
+	if err != nil {
+		slog.Error("database query failed",
+			"operation", "GetChunkContext",
+			"error", err,
+			"duration_ms", time.Since(start).Milliseconds())
+		return nil, err
+	}
+	defer beforeRows.Close()
+
+	var beforeChunks []models.ChunkRow
+	for beforeRows.Next() {
+		var chunk models.ChunkRow
+		if err := beforeRows.Scan(&chunk.ID, &chunk.Text, &chunk.ChunkIndex, &chunk.SourceURL,
+			&chunk.Author, &chunk.Title, &chunk.Year, &chunk.Genre); err != nil {
+			return nil, err
+		}
+		beforeChunks = append(beforeChunks, chunk)
+	}
+
+	if err := beforeRows.Err(); err != nil {
+		return nil, err
+	}
+
+	// Reverse beforeChunks to get chronological order
+	for i, j := 0, len(beforeChunks)-1; i < j; i, j = i+1, j-1 {
+		beforeChunks[i], beforeChunks[j] = beforeChunks[j], beforeChunks[i]
+	}
+
+	// Get chunks after
+	afterRows, err := db.QueryContext(ctx, `
+		SELECT id, text, chunk_index, source_url, author, title, year, genre
+		FROM texts
+		WHERE source_url = ? AND chunk_index > ?
+		ORDER BY chunk_index ASC
+		LIMIT ?
+	`, current.SourceURL, current.ChunkIndex.Int32, window)
+
+	if err != nil {
+		slog.Error("database query failed",
+			"operation", "GetChunkContext",
+			"error", err,
+			"duration_ms", time.Since(start).Milliseconds())
+		return nil, err
+	}
+	defer afterRows.Close()
+
+	var afterChunks []models.ChunkRow
+	for afterRows.Next() {
+		var chunk models.ChunkRow
+		if err := afterRows.Scan(&chunk.ID, &chunk.Text, &chunk.ChunkIndex, &chunk.SourceURL,
+			&chunk.Author, &chunk.Title, &chunk.Year, &chunk.Genre); err != nil {
+			return nil, err
+		}
+		afterChunks = append(afterChunks, chunk)
+	}
+
+	if err := afterRows.Err(); err != nil {
+		return nil, err
+	}
+
+	// Calculate has_more flags
+	chunkIdx := int(current.ChunkIndex.Int32)
+	hasMoreBefore := chunkIdx > len(beforeChunks)
+	hasMoreAfter := chunkIdx+len(afterChunks)+1 < totalChunks
+
+	duration := time.Since(start)
+	slog.Info("chunk context retrieved",
+		"operation", "GetChunkContext",
+		"id", id,
+		"window", window,
+		"before_count", len(beforeChunks),
+		"after_count", len(afterChunks),
+		"total_chunks", totalChunks,
+		"duration_ms", duration.Milliseconds())
+
+	return &ChunkContext{
+		CurrentChunk:  &current,
+		BeforeChunks:  beforeChunks,
+		AfterChunks:   afterChunks,
+		TotalChunks:   totalChunks,
+		HasMoreBefore: hasMoreBefore,
+		HasMoreAfter:  hasMoreAfter,
+	}, nil
+}
+
+// GetChunksBefore retrieves chunks that come before the given chunk ID.
+// Returns chunks in chronological order (oldest to newest relative to the target chunk).
+func GetChunksBefore(ctx context.Context, id int, limit int) ([]models.ChunkRow, error) {
+	start := time.Now()
+
+	db, err := getConnection()
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
+	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			slog.Warn("failed to close database connection",
+				"error", err,
+				"operation", "GetChunksBefore")
+		}
+	}()
+
+	// Get the current chunk to find its source_url and chunk_index
+	var current models.ChunkRow
+	err = db.QueryRowContext(ctx, `
+		SELECT id, text, chunk_index, source_url, author, title, year, genre
+		FROM texts
+		WHERE id = ?
+	`, id).Scan(&current.ID, &current.Text, &current.ChunkIndex, &current.SourceURL,
+		&current.Author, &current.Title, &current.Year, &current.Genre)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			slog.Debug("chunk not found",
+				"operation", "GetChunksBefore",
+				"id", id,
+				"duration_ms", time.Since(start).Milliseconds())
+			return nil, sql.ErrNoRows
+		}
+		slog.Error("database query failed",
+			"operation", "GetChunksBefore",
+			"id", id,
+			"error", err,
+			"duration_ms", time.Since(start).Milliseconds())
+		return nil, err
+	}
+
+	// Get chunks before (order DESC to get most recent first, then reverse)
+	rows, err := db.QueryContext(ctx, `
+		SELECT id, text, chunk_index, source_url, author, title, year, genre
+		FROM texts
+		WHERE source_url = ? AND chunk_index < ?
+		ORDER BY chunk_index DESC
+		LIMIT ?
+	`, current.SourceURL, current.ChunkIndex.Int32, limit)
+
+	if err != nil {
+		slog.Error("database query failed",
+			"operation", "GetChunksBefore",
+			"error", err,
+			"duration_ms", time.Since(start).Milliseconds())
+		return nil, err
+	}
+	defer rows.Close()
+
+	var chunks []models.ChunkRow
+	for rows.Next() {
+		var chunk models.ChunkRow
+		if err := rows.Scan(&chunk.ID, &chunk.Text, &chunk.ChunkIndex, &chunk.SourceURL,
+			&chunk.Author, &chunk.Title, &chunk.Year, &chunk.Genre); err != nil {
+			return nil, err
+		}
+		chunks = append(chunks, chunk)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// Reverse chunks to get chronological order (oldest to newest)
+	for i, j := 0, len(chunks)-1; i < j; i, j = i+1, j-1 {
+		chunks[i], chunks[j] = chunks[j], chunks[i]
+	}
+
+	duration := time.Since(start)
+	slog.Info("chunks before retrieved",
+		"operation", "GetChunksBefore",
+		"id", id,
+		"limit", limit,
+		"count", len(chunks),
+		"duration_ms", duration.Milliseconds())
+
+	return chunks, nil
+}
+
+// GetChunksAfter retrieves chunks that come after the given chunk ID.
+// Returns chunks in chronological order (from the target chunk onwards).
+func GetChunksAfter(ctx context.Context, id int, limit int) ([]models.ChunkRow, error) {
+	start := time.Now()
+
+	db, err := getConnection()
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
+	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			slog.Warn("failed to close database connection",
+				"error", err,
+				"operation", "GetChunksAfter")
+		}
+	}()
+
+	// Get the current chunk to find its source_url and chunk_index
+	var current models.ChunkRow
+	err = db.QueryRowContext(ctx, `
+		SELECT id, text, chunk_index, source_url, author, title, year, genre
+		FROM texts
+		WHERE id = ?
+	`, id).Scan(&current.ID, &current.Text, &current.ChunkIndex, &current.SourceURL,
+		&current.Author, &current.Title, &current.Year, &current.Genre)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			slog.Debug("chunk not found",
+				"operation", "GetChunksAfter",
+				"id", id,
+				"duration_ms", time.Since(start).Milliseconds())
+			return nil, sql.ErrNoRows
+		}
+		slog.Error("database query failed",
+			"operation", "GetChunksAfter",
+			"id", id,
+			"error", err,
+			"duration_ms", time.Since(start).Milliseconds())
+		return nil, err
+	}
+
+	// Get chunks after
+	rows, err := db.QueryContext(ctx, `
+		SELECT id, text, chunk_index, source_url, author, title, year, genre
+		FROM texts
+		WHERE source_url = ? AND chunk_index > ?
+		ORDER BY chunk_index ASC
+		LIMIT ?
+	`, current.SourceURL, current.ChunkIndex.Int32, limit)
+
+	if err != nil {
+		slog.Error("database query failed",
+			"operation", "GetChunksAfter",
+			"error", err,
+			"duration_ms", time.Since(start).Milliseconds())
+		return nil, err
+	}
+	defer rows.Close()
+
+	var chunks []models.ChunkRow
+	for rows.Next() {
+		var chunk models.ChunkRow
+		if err := rows.Scan(&chunk.ID, &chunk.Text, &chunk.ChunkIndex, &chunk.SourceURL,
+			&chunk.Author, &chunk.Title, &chunk.Year, &chunk.Genre); err != nil {
+			return nil, err
+		}
+		chunks = append(chunks, chunk)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	duration := time.Since(start)
+	slog.Info("chunks after retrieved",
+		"operation", "GetChunksAfter",
+		"id", id,
+		"limit", limit,
+		"count", len(chunks),
+		"duration_ms", duration.Milliseconds())
+
+	return chunks, nil
+}
