@@ -57,10 +57,10 @@
 - [x] Update `worker.py` to pass chunk indices (enumerate during processing)
 - [x] Ensure indices are 0-based, sequential within each source
 
-### 7.3 Backfill Existing Data
-- [ ] Add migration script to assign `chunk_index` to existing chunks
-- [ ] Order by `id` ASC within each `source_url` (preserves insertion order)
-- [ ] Verify migration with test queries
+### 7.3 Backfill Existing Data ✓
+- [x] Add migration script to assign `chunk_index` to existing chunks
+- [x] Order by `id` ASC within each `source_url` (preserves insertion order)
+- [x] Verify migration with test queries
 
 ## Phase 8: Chunk Detail Page
 
