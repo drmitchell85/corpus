@@ -93,12 +93,12 @@
 - [x] Show metadata header (title, author, year, position)
 - [x] Add "Back to Search" navigation
 
-### 8.5 Frontend — Load More
-- [ ] Add "Load previous" button (above chunks, hidden if `!has_more_before`)
-- [ ] Add "Load more" button (below chunks, hidden if `!has_more_after`)
-- [ ] Implement chunk prepending/appending to state
-- [ ] Loading states for buttons
-- [ ] Smaller initial window on mobile (0 before/after vs 1+1)
+### 8.5 Frontend — Load More ✓
+- [x] Add "Load previous" button (above chunks, hidden if `!has_more_before`)
+- [x] Add "Load more" button (below chunks, hidden if `!has_more_after`)
+- [x] Implement chunk prepending/appending to state
+- [x] Loading states for buttons
+- [x] Smaller initial window on mobile (0 before/after vs 1+1)
 
 ### 8.6 Frontend — Search Integration
 - [ ] Make `ResultCard` clickable (wrap text in `Link`)
