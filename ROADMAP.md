@@ -46,61 +46,67 @@
 - PDF file cleanup with path traversal protection and TOCTOU safeguards
 - Frontend delete button with confirmation dialog and optimistic UI updates
 
-## Phase 7: Chunk Ordering
+## Phase 7: Chunk Ordering ✓
 
-### 7.1 Schema Migration ✓
-- [x] Add `chunk_index` column (INTEGER) to `texts` table in `workers/db.py`
-- [x] Create index on `(source_url, chunk_index)` for efficient ordering queries
-- [x] Update `store_chunks()` to accept and store chunk indices
+- `chunk_index` column added to texts table with composite index on `(source_url, chunk_index)`
+- Worker updates to pass sequential chunk indices during processing
+- Migration script to backfill existing chunks ordered by insertion
 
-### 7.2 Worker Updates ✓
-- [x] Update `worker.py` to pass chunk indices (enumerate during processing)
-- [x] Ensure indices are 0-based, sequential within each source
+## Phase 8: Chunk Detail Page ✓
 
-### 7.3 Backfill Existing Data ✓
-- [x] Add migration script to assign `chunk_index` to existing chunks
-- [x] Order by `id` ASC within each `source_url` (preserves insertion order)
-- [x] Verify migration with test queries
+- Context endpoint (`GET /chunks/{id}/context`) returning chunk with neighbors and navigation flags
+- Pagination endpoints (`GET /chunks/{id}/before`, `/after`) for infinite scroll
+- ChunkPage component with highlighted current chunk and surrounding context
+- Load more functionality for expanding context in both directions
+- Search integration with clickable results linking to chunk detail view
 
-## Phase 8: Chunk Detail Page
+## Phase 9: Browser Extension
 
-### 8.1 Backend — Context Endpoint ✓
-- [x] Add `GetChunkContext(ctx, id, window)` to `db/db.go`
-- [x] Query current chunk, count total chunks for source
-- [x] Query before/after chunks using `chunk_index` ordering
-- [x] Return `has_more_before`, `has_more_after` flags
-- [x] Add `ChunkContextResponse` model to `models/models.go`
-- [x] Add `GET /chunks/{id}/context` handler in `handler/chunks.go`
-- [x] Register route in `router/router.go`
+### 9.1 Extension Scaffold ✓
+- [x] Create `/extension` directory structure
+- [x] `manifest.json` with Manifest V3 configuration
+- [x] Background service worker (`background.js`) shell
+- [x] Popup HTML/JS structure (`popup.html`, `popup.js`)
+- [x] Placeholder icons (16, 48, 128px)
+- [x] Verify extension loads in `chrome://extensions/`
 
-### 8.2 Backend — Pagination Endpoints ✓
-- [x] Add `GET /chunks/{id}/before?limit=3` endpoint
-- [x] Add `GET /chunks/{id}/after?limit=3` endpoint
-- [x] Use `chunk_index` for efficient range queries
-- [x] Return chunks ordered appropriately (before: DESC, after: ASC)
+### 9.2 Backend — HTML Ingestion API
+- [ ] Add `readability-lxml` to worker dependencies
+- [ ] Create `workers/html_extractor.py` with Readability integration
+- [ ] Add `POST /ingest/html` Go endpoint accepting `{ html, url, metadata }`
+- [ ] Route to new Celery task `process_html` (extract → chunk → embed → store)
+- [ ] Return extracted title in response for popup display
+- [ ] Add integration test for HTML ingestion flow
 
-### 8.3 Frontend — API Client ✓
-- [x] Add `ChunkContext` type to `types/api.ts`
-- [x] Add `getChunkContext(id, window)` function to `api/client.ts`
-- [x] Add `getChunksBefore(id, limit)` function
-- [x] Add `getChunksAfter(id, limit)` function
+### 9.3 Popup UI — Save Form
+- [ ] Text preview area (readonly textarea or div)
+- [ ] Title input field (editable, auto-populated for full page)
+- [ ] Author input field (editable)
+- [ ] Tags input field (comma-separated or chips)
+- [ ] Save / Cancel buttons
+- [ ] Basic styling (matches Corpus aesthetic)
+- [ ] Message passing setup between popup and background
 
-### 8.4 Frontend — Chunk Page ✓
-- [x] Add `/chunk/:id` route to `App.tsx`
-- [x] Create `ChunkPage.tsx` component
-- [x] Create `useChunkContext` hook with state management
-- [x] Display current chunk (highlighted) + neighbors
-- [x] Show metadata header (title, author, year, position)
-- [x] Add "Back to Search" navigation
+### 9.4 Context Menu — Selection Capture
+- [ ] Register context menu item "Save to Corpus" in background.js
+- [ ] Menu appears only when text is selected (`contexts: ["selection"]`)
+- [ ] Use `chrome.scripting.executeScript` to get selection
+- [ ] Store selection in `chrome.storage.session` for popup access
+- [ ] Open popup with selected text pre-filled
+- [ ] POST to `/ingest/html` endpoint with metadata
 
-### 8.5 Frontend — Load More ✓
-- [x] Add "Load previous" button (above chunks, hidden if `!has_more_before`)
-- [x] Add "Load more" button (below chunks, hidden if `!has_more_after`)
-- [x] Implement chunk prepending/appending to state
-- [x] Loading states for buttons
-- [x] Smaller initial window on mobile (0 before/after vs 1+1)
+### 9.5 Full Page Capture
+- [ ] Browser action click triggers content script injection
+- [ ] Content script captures `document.documentElement.outerHTML`
+- [ ] Capture page title, URL, domain automatically
+- [ ] Send HTML to `/ingest/html` for extraction
+- [ ] Populate popup with extracted text and auto-filled title
+- [ ] User can edit metadata before final save
 
-### 8.6 Frontend — Search Integration ✓
-- [x] Make `ResultCard` clickable (wrap text in `Link`)
-- [x] Navigate to `/chunk/{id}` on click
-- [x] Preserve search query in URL/state for back navigation
+### 9.6 Polish & Error Handling
+- [ ] Loading spinner in popup during save
+- [ ] Success message ("✓ Saved to Corpus")
+- [ ] Error message with reason ("✗ Failed: connection refused")
+- [ ] Disable save button while request in flight
+- [ ] Handle offline/unreachable API gracefully
+- [ ] API endpoint configurable via constant (for future settings page)

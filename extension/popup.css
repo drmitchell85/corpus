@@ -1,0 +1,37 @@
+/* Corpus extension popup styles
+   Matches the academic early-internet aesthetic from the main app */
+
+body {
+  width: 400px;
+  min-height: 200px;
+  margin: 0;
+  padding: 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  background: #faf8f3; /* Matches main app --color-bg-primary */
+  color: #2c3e50; /* Matches main app --color-text-primary */
+}
+
+.container {
+  padding: 16px;
+}
+
+header {
+  border-bottom: 2px solid #333;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.status {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #555;
+}
+
+/* Form styles will be added in Phase 9.2 */

@@ -12,6 +12,7 @@ Ingests texts via API, processes them asynchronously through workers, stores emb
 - **Workers**: Python Celery (fetch, chunk, embed, store)
 - **Storage**: DuckDB (embedded vectors and metadata)
 - **Frontend**: React (search interface)
+- **Browser Extension**: Chrome/Edge extension for capturing web content (Manifest V3)
 
 ## Setup
 
@@ -71,6 +72,11 @@ API checks if text exists in DuckDB. If not, it queues the text for processing. 
 - GET `/search?q=<query>&limit=<n>` → semantic search (requires embedding service)
 - GET `/texts?page=<n>&per_page=<n>` → list all ingested texts
 - GET `/ingest/status/<job_id>` → check ingestion job status
+
+**Browser extension** (see `extension/README.md`):
+- Load unpacked extension from `/extension` in `chrome://extensions/`
+- Right-click selected text → "Save to Corpus"
+- Click extension icon → save full page
 
 ## Architecture
 
