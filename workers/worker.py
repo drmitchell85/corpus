@@ -10,6 +10,7 @@ from celery.signals import worker_ready
 from workers.celery_config import app
 from workers.gutenberg import fetch_and_clean
 from workers.pdf import extract_and_clean as extract_pdf
+from workers.html_extractor import extract_and_clean as extract_html
 from workers.chunker import chunk_text
 from workers.embedder import embed_chunks
 from workers.db import store_chunks, init_schema
@@ -334,6 +335,215 @@ def process_text(self, job_id: str, source_type: str, source_url: str = None,
         # Unknown exceptions - log and don't retry to avoid infinite loops
         logger.error(
             "Task failed with unexpected error",
+            extra={
+                "job_id": job_id,
+                "error_type": type(exc).__name__,
+                "error": str(exc),
+            },
+            exc_info=True
+        )
+        raise
+
+
+@app.task(
+    bind=True,
+    max_retries=_get_max_retries(),
+    retry_backoff=True,
+    retry_backoff_max=600,
+    retry_jitter=True,
+    task_time_limit=600,
+    task_soft_time_limit=540,
+    acks_late=True,
+    task_reject_on_worker_lost=True,
+)
+def process_html(self, job_id: str, html: str, source_url: str = None, metadata: dict = None):
+    """Process HTML content from browser extension or API.
+
+    Pipeline:
+    1. Extract text from HTML using Readability
+    2. Chunk into paragraphs (100-2000 chars)
+    3. Embed each chunk with sentence-transformers
+    4. Store chunks + embeddings in DuckDB
+
+    Args:
+        job_id: Unique identifier for this job
+        html: Raw HTML content
+        source_url: URL where HTML was captured from (optional)
+        metadata: Dict with author, title, year, genre (optional)
+            Note: If metadata["title"] is not provided, will use extracted title from Readability
+
+    Returns:
+        dict: Job result with status and details
+    """
+    # P2-4: Copy metadata dict to avoid mutating caller's dict
+    metadata = dict(metadata or {})
+    task_start = time.time()
+
+    logger.info(
+        "HTML processing task started",
+        extra={
+            "job_id": job_id,
+            "html_length": len(html),
+            "source_url": source_url,
+            "metadata": metadata,
+        }
+    )
+
+    try:
+        # Step 1: Extract text from HTML
+        extract_start = time.time()
+        logger.debug(
+            "Extracting text from HTML",
+            extra={"job_id": job_id, "html_length": len(html)}
+        )
+        text, extracted_title = extract_html(html, url=source_url)
+        extract_duration_ms = int((time.time() - extract_start) * 1000)
+
+        logger.info(
+            "HTML extraction successful",
+            extra={
+                "job_id": job_id,
+                "html_length": len(html),
+                "text_length": len(text),
+                "extracted_title": extracted_title,
+                "duration_ms": extract_duration_ms,
+            }
+        )
+
+        # Use extracted title if not provided in metadata
+        if not metadata.get("title") and extracted_title:
+            metadata["title"] = extracted_title
+            logger.debug(
+                "Using extracted title from Readability",
+                extra={"job_id": job_id, "title": extracted_title}
+            )
+
+        # Step 2: Chunk text
+        chunk_start = time.time()
+        logger.debug("Chunking text", extra={"job_id": job_id, "text_length": len(text)})
+        chunks = chunk_text(text)
+        chunk_duration_ms = int((time.time() - chunk_start) * 1000)
+
+        if not chunks:
+            logger.warning(
+                "No chunks produced from HTML",
+                extra={
+                    "job_id": job_id,
+                    "text_length": len(text),
+                    "duration_ms": chunk_duration_ms,
+                }
+            )
+            return {
+                "job_id": job_id,
+                "status": "completed",
+                "source_type": "html",
+                "chunks_stored": 0,
+                "message": "No chunks produced from HTML",
+            }
+
+        logger.info(
+            "Text chunked successfully",
+            extra={
+                "job_id": job_id,
+                "chunk_count": len(chunks),
+                "duration_ms": chunk_duration_ms,
+            }
+        )
+
+        # Step 3: Embed chunks
+        embed_start = time.time()
+        logger.debug("Embedding chunks", extra={"job_id": job_id, "chunk_count": len(chunks)})
+        embeddings = embed_chunks(chunks)
+        embed_duration_ms = int((time.time() - embed_start) * 1000)
+        logger.info(
+            "Chunks embedded successfully",
+            extra={
+                "job_id": job_id,
+                "chunk_count": len(chunks),
+                "duration_ms": embed_duration_ms,
+            }
+        )
+
+        # Step 4: Store in DuckDB
+        store_start = time.time()
+        logger.debug("Storing chunks in database", extra={"job_id": job_id, "chunk_count": len(chunks)})
+        chunk_indices = list(range(len(chunks)))
+        result = store_chunks(
+            chunks=chunks,
+            embeddings=embeddings,
+            source_url=source_url or f"html-{job_id}",  # Fallback if no URL provided
+            chunk_indices=chunk_indices,
+            author=metadata.get("author"),
+            title=metadata.get("title"),
+            year=metadata.get("year"),
+            genre=metadata.get("genre"),
+            job_id=job_id,
+        )
+        store_duration_ms = int((time.time() - store_start) * 1000)
+
+        task_duration_ms = int((time.time() - task_start) * 1000)
+        logger.info(
+            "HTML processing task completed successfully",
+            extra={
+                "job_id": job_id,
+                "chunks_stored": result.stored,
+                "chunks_skipped": result.skipped,
+                "store_duration_ms": store_duration_ms,
+                "total_duration_ms": task_duration_ms,
+            }
+        )
+
+        return {
+            "job_id": job_id,
+            "status": "completed",
+            "source_type": "html",
+            "chunks_processed": len(chunks),
+            "chunks_stored": result.stored,
+            "chunks_skipped": result.skipped,
+            "extracted_title": extracted_title,
+        }
+
+    except ValueError as exc:
+        # Permanent validation failures - don't retry
+        logger.error(
+            "HTML processing task failed with validation error",
+            extra={
+                "job_id": job_id,
+                "error_type": type(exc).__name__,
+                "error": str(exc),
+            }
+        )
+        raise
+
+    except RuntimeError as exc:
+        # Model loading or system failures
+        logger.error(
+            "HTML processing task failed with runtime error",
+            extra={
+                "job_id": job_id,
+                "error_type": type(exc).__name__,
+                "error": str(exc),
+            },
+            exc_info=True
+        )
+        raise
+
+    except SoftTimeLimitExceeded as exc:
+        # Task exceeded soft timeout - retry
+        logger.warning(
+            "HTML processing task exceeded soft time limit, retrying",
+            extra={
+                "job_id": job_id,
+                "soft_limit_seconds": 540,
+                "retry_count": self.request.retries,
+            }
+        )
+        raise self.retry(exc=exc)
+
+    except Exception as exc:
+        # Unknown exceptions - log and don't retry
+        logger.error(
+            "HTML processing task failed with unexpected error",
             extra={
                 "job_id": job_id,
                 "error_type": type(exc).__name__,

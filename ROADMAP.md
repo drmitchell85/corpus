@@ -70,43 +70,64 @@
 - [x] Placeholder icons (16, 48, 128px)
 - [x] Verify extension loads in `chrome://extensions/`
 
-### 9.2 Backend — HTML Ingestion API
-- [ ] Add `readability-lxml` to worker dependencies
-- [ ] Create `workers/html_extractor.py` with Readability integration
-- [ ] Add `POST /ingest/html` Go endpoint accepting `{ html, url, metadata }`
-- [ ] Route to new Celery task `process_html` (extract → chunk → embed → store)
-- [ ] Return extracted title in response for popup display
-- [ ] Add integration test for HTML ingestion flow
+### 9.2a Worker — HTML Extraction ✓
+- [x] Add `readability-lxml` to worker dependencies (`requirements.txt`)
+- [x] Create `workers/html_extractor.py` using Readability for text extraction
+- [x] Add `process_html` Celery task (extract → chunk → embed → store)
+- [x] Unit test for HTML extraction with sample pages
 
-### 9.3 Popup UI — Save Form
+### 9.2b API — HTML Ingestion Endpoint
+- [ ] Add `POST /ingest/html` Go endpoint accepting `{ html, url, metadata }`
+- [ ] Validate request, queue `process_html` task via Redis
+- [ ] Return job ID and extracted title in response
+- [ ] Integration test for full HTML ingestion flow
+
+### 9.3a Scaffold Fixes (from review)
+- [ ] Fix async message handler pattern in `background.js` (use async IIFE)
+- [ ] Add timeout handling to popup message helper
+- [ ] Fix API helper to check content-type before parsing JSON
+
+### 9.3b Popup UI — Form Structure
 - [ ] Text preview area (readonly textarea or div)
-- [ ] Title input field (editable, auto-populated for full page)
-- [ ] Author input field (editable)
-- [ ] Tags input field (comma-separated or chips)
-- [ ] Save / Cancel buttons
+- [ ] Title, author, tags input fields
+- [ ] Save / Cancel buttons with click handlers
 - [ ] Basic styling (matches Corpus aesthetic)
-- [ ] Message passing setup between popup and background
+
+### 9.3c Popup UI — Background Integration
+- [ ] Message passing between popup and background worker
+- [ ] Popup receives and displays content from background
+- [ ] Save button triggers API call via background worker
 
 ### 9.4 Context Menu — Selection Capture
-- [ ] Register context menu item "Save to Corpus" in background.js
-- [ ] Menu appears only when text is selected (`contexts: ["selection"]`)
-- [ ] Use `chrome.scripting.executeScript` to get selection
-- [ ] Store selection in `chrome.storage.session` for popup access
+- [ ] Register context menu item "Save to Corpus" (`contexts: ["selection"]`)
+- [ ] Use `chrome.scripting.executeScript` to capture selection
+- [ ] Store selection in `chrome.storage.session`
 - [ ] Open popup with selected text pre-filled
-- [ ] POST to `/ingest/html` endpoint with metadata
+- [ ] POST to `/ingest/html` endpoint on save
 
-### 9.5 Full Page Capture
-- [ ] Browser action click triggers content script injection
+### 9.5a Full Page — Content Capture
+- [ ] Add `tabs` permission to manifest.json
 - [ ] Content script captures `document.documentElement.outerHTML`
-- [ ] Capture page title, URL, domain automatically
-- [ ] Send HTML to `/ingest/html` for extraction
+- [ ] Extract page title, URL, domain automatically
+- [ ] Store captured HTML in `chrome.storage.session`
+
+### 9.5b Full Page — Popup Flow
+- [ ] Browser action click triggers content script injection
+- [ ] Send HTML to `/ingest/html`, receive extracted text
 - [ ] Populate popup with extracted text and auto-filled title
 - [ ] User can edit metadata before final save
 
-### 9.6 Polish & Error Handling
+### 9.6a Polish — Loading States
 - [ ] Loading spinner in popup during save
+- [ ] Disable save button while request in flight
+- [ ] Prevent duplicate submissions
+
+### 9.6b Polish — User Feedback
 - [ ] Success message ("✓ Saved to Corpus")
 - [ ] Error message with reason ("✗ Failed: connection refused")
-- [ ] Disable save button while request in flight
+- [ ] Auto-close popup after successful save (optional)
+
+### 9.6c Polish — Error Handling & Config
 - [ ] Handle offline/unreachable API gracefully
-- [ ] API endpoint configurable via constant (for future settings page)
+- [ ] API endpoint configurable via constant
+- [ ] Optional: Settings page for custom API URL
