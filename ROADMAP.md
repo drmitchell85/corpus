@@ -76,11 +76,12 @@
 - [x] Add `process_html` Celery task (extract → chunk → embed → store)
 - [x] Unit test for HTML extraction with sample pages
 
-### 9.2b API — HTML Ingestion Endpoint
-- [ ] Add `POST /ingest/html` Go endpoint accepting `{ html, url, metadata }`
-- [ ] Validate request, queue `process_html` task via Redis
-- [ ] Return job ID and extracted title in response
-- [ ] Integration test for full HTML ingestion flow
+### 9.2b API — HTML Ingestion Endpoint ✓
+- [x] Add `POST /ingest/html` Go endpoint accepting `{ html, url, metadata }`
+- [x] Validate request (SSRF protection, size limits, metadata lengths), queue `process_html` task via Redis
+- [x] Return job ID in response (title/author user-provided via extension popup; extraction is fallback)
+- [x] Integration test for full HTML ingestion flow
+- [x] Upsert behavior: replacing existing content when same URL submitted again
 
 ### 9.3a Scaffold Fixes (from review)
 - [ ] Fix async message handler pattern in `background.js` (use async IIFE)
@@ -131,3 +132,15 @@
 - [ ] Handle offline/unreachable API gracefully
 - [ ] API endpoint configurable via constant
 - [ ] Optional: Settings page for custom API URL
+
+## Phase 10: Deployment Hardening (Future)
+
+Security and reliability improvements for production deployment:
+
+- [ ] **Rate Limiting** - Per-IP request throttling to prevent abuse
+- [ ] **API Key Authentication** - Optional API key requirement for ingestion endpoints
+- [ ] **CORS Configuration** - Restrict access to extension-only or trusted origins
+- [ ] **Request Size Monitoring** - Alerting on unusual request patterns
+- [ ] **Graceful Degradation** - Fallback behavior when services unavailable
+
+**Note:** Phase 9 focuses on local development use. Production hardening deferred to Phase 10.

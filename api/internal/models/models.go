@@ -71,12 +71,26 @@ type IngestRequest struct {
 	Metadata  *IngestMetadata `json:"metadata,omitempty"`
 }
 
+// IngestHTMLRequest is the JSON body for POST /ingest/html.
+type IngestHTMLRequest struct {
+	HTML      string          `json:"html"`
+	SourceURL string          `json:"url,omitempty"`
+	Metadata  *IngestMetadata `json:"metadata,omitempty"`
+}
+
 // ============================================================================
 // API Response Types
 // ============================================================================
 
 // IngestResponse is the JSON response for POST /ingest.
 type IngestResponse struct {
+	JobID   string `json:"job_id,omitempty"`
+	Status  string `json:"status"`
+	Message string `json:"message,omitempty"`
+}
+
+// IngestHTMLResponse is the JSON response for POST /ingest/html.
+type IngestHTMLResponse struct {
 	JobID   string `json:"job_id,omitempty"`
 	Status  string `json:"status"`
 	Message string `json:"message,omitempty"`

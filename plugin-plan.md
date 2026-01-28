@@ -38,27 +38,29 @@ extension/
 ```
 
 ### Data Format
+
+**Important:** Title and author are **user-provided via extension popup**, not auto-extracted. The worker's HTML extraction is a fallback mechanism only if metadata is not provided.
+
+**Data flow:**
+1. Extension captures HTML from page
+2. User reviews content in popup and **edits metadata** (title, author, tags)
+3. Extension sends user-edited metadata + HTML to `/ingest/html`
+4. Worker extracts text from HTML (uses user's title/author if provided)
+
 Extension sends to `/ingest/html` endpoint:
 ```json
 {
   "html": "<html>...</html>",
   "url": "https://example.com/article",
   "metadata": {
-    "author": "Jane Doe",
-    "title": "Article Title",
+    "author": "Jane Doe",           // User-edited in popup
+    "title": "Article Title",        // User-edited in popup
     "tags": ["philosophy", "community"]
   }
 }
 ```
 
-For text selections (no HTML extraction needed):
-```json
-{
-  "text": "The selected text content...",
-  "url": "https://example.com/article",
-  "metadata": { ... }
-}
-```
+**Upsert behavior:** If the same URL is submitted again, existing chunks are deleted and replaced with new content. This allows users to update saved pages.
 
 ### Key Technologies
 - **Manifest V3**: Modern extension standard

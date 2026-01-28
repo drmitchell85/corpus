@@ -244,10 +244,17 @@ func parseUploadMetadata(r *http.Request) (*models.TaskMetadata, error) {
 		year = parsedYear
 	}
 
-	return &models.TaskMetadata{
+	metadata := &models.TaskMetadata{
 		Author: author,
 		Title:  title,
 		Year:   year,
 		Genre:  genre,
-	}, nil
+	}
+
+	// Validate metadata field lengths using shared validation
+	if err := validateMetadata(metadata); err != nil {
+		return nil, err
+	}
+
+	return metadata, nil
 }

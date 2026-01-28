@@ -22,6 +22,9 @@ const (
 
 	// TaskName is the full Python path to the process_text task.
 	TaskName = "workers.worker.process_text"
+
+	// HTMLTaskName is the full Python path to the process_html task.
+	HTMLTaskName = "workers.worker.process_html"
 )
 
 // QueueResult contains the result of queueing a task.
@@ -37,6 +40,45 @@ func QueueTextJob(ctx context.Context, sourceType, sourceURL string, metadata *m
 // QueuePDFJob queues a PDF processing job for Celery workers.
 func QueuePDFJob(ctx context.Context, pdfPath string, metadata *models.TaskMetadata) (*QueueResult, error) {
 	return QueueJob(ctx, "pdf", "", pdfPath, metadata)
+}
+
+// QueueHTMLJob queues an HTML processing job for Celery workers.
+func QueueHTMLJob(ctx context.Context, html, sourceURL string, metadata *models.TaskMetadata) (*QueueResult, error) {
+	start := time.Now()
+	jobID := generateJobID()
+
+	slog.Debug("building celery task message for HTML",
+		"job_id", jobID,
+		"html_length", len(html),
+		"has_url", sourceURL != "",
+		"has_metadata", metadata != nil)
+
+	msg, err := buildHTMLMessage(jobID, html, sourceURL, metadata)
+	if err != nil {
+		slog.Error("failed to build celery HTML message",
+			"job_id", jobID,
+			"error", err,
+			"duration_ms", time.Since(start).Milliseconds())
+		return nil, fmt.Errorf("build message: %w", err)
+	}
+
+	if err := pushToQueue(ctx, msg); err != nil {
+		slog.Error("failed to push HTML job to celery queue",
+			"job_id", jobID,
+			"queue", DefaultQueue,
+			"error", err,
+			"duration_ms", time.Since(start).Milliseconds())
+		return nil, fmt.Errorf("push to queue: %w", err)
+	}
+
+	duration := time.Since(start)
+	slog.Info("HTML job queued to celery",
+		"job_id", jobID,
+		"html_length", len(html),
+		"queue", DefaultQueue,
+		"duration_ms", duration.Milliseconds())
+
+	return &QueueResult{JobID: jobID}, nil
 }
 
 // QueueJob queues a text processing job for Celery workers.
@@ -85,7 +127,30 @@ func generateJobID() string {
 // buildMessage constructs a Celery-compatible message.
 func buildMessage(jobID, sourceType, sourceURL, pdfPath string, metadata *models.TaskMetadata) ([]byte, error) {
 	body := buildBody(jobID, sourceType, sourceURL, pdfPath, metadata)
-	headers := buildHeaders(jobID)
+	headers := buildHeaders(jobID, TaskName)
+	properties := buildProperties(jobID)
+
+	bodyJSON, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyEncoded := base64.StdEncoding.EncodeToString(bodyJSON)
+
+	message := map[string]any{
+		"body":             bodyEncoded,
+		"content-encoding": "utf-8",
+		"content-type":     "application/json",
+		"headers":          headers,
+		"properties":       properties,
+	}
+
+	return json.Marshal(message)
+}
+
+// buildHTMLMessage constructs a Celery-compatible message for process_html task.
+func buildHTMLMessage(jobID, html, sourceURL string, metadata *models.TaskMetadata) ([]byte, error) {
+	body := buildHTMLBody(jobID, html, sourceURL, metadata)
+	headers := buildHeaders(jobID, HTMLTaskName)
 	properties := buildProperties(jobID)
 
 	bodyJSON, err := json.Marshal(body)
@@ -130,13 +195,35 @@ func buildBody(jobID, sourceType, sourceURL, pdfPath string, metadata *models.Ta
 	}
 }
 
+// buildHTMLBody creates the Celery message body for process_html task.
+func buildHTMLBody(jobID, html, sourceURL string, metadata *models.TaskMetadata) []any {
+	kwargs := map[string]any{
+		"job_id": jobID,
+		"html":   html,
+	}
+
+	if sourceURL != "" {
+		kwargs["source_url"] = sourceURL
+	}
+	if metadata != nil {
+		kwargs["metadata"] = metadata
+	}
+
+	// Celery body format: [positional_args, keyword_args, embed_options]
+	return []any{
+		[]any{},          // args (empty, we use kwargs)
+		kwargs,           // kwargs
+		map[string]any{}, // embed options
+	}
+}
+
 // buildHeaders creates Celery message headers.
-func buildHeaders(jobID string) map[string]any {
+func buildHeaders(jobID, taskName string) map[string]any {
 	hostname, _ := os.Hostname()
 
 	return map[string]any{
 		"lang":       "py",
-		"task":       TaskName,
+		"task":       taskName,
 		"id":         jobID,
 		"root_id":    jobID,
 		"parent_id":  nil,
