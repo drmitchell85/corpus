@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"math"
 	"strings"
 	"time"
 
@@ -300,7 +301,14 @@ func SearchTexts(ctx context.Context, embedding []float32, limit int) ([]models.
 	}()
 
 	// Build the embedding array literal for DuckDB
-	embeddingLiteral := floatsToArrayLiteral(embedding)
+	embeddingLiteral, err := floatsToArrayLiteral(embedding)
+	if err != nil {
+		slog.Error("invalid embedding values",
+			"operation", "SearchTexts",
+			"error", err,
+			"duration_ms", time.Since(start).Milliseconds())
+		return nil, fmt.Errorf("invalid embedding: %w", err)
+	}
 
 	query := fmt.Sprintf(`
 		SELECT
@@ -353,12 +361,17 @@ func SearchTexts(ctx context.Context, embedding []float32, limit int) ([]models.
 }
 
 // floatsToArrayLiteral converts a float32 slice to a DuckDB array literal.
-func floatsToArrayLiteral(floats []float32) string {
+// Returns an error if any value is NaN or Inf (defense against malformed embeddings).
+func floatsToArrayLiteral(floats []float32) (string, error) {
 	strs := make([]string, len(floats))
 	for i, f := range floats {
+		// Validate: reject NaN and Inf values that could break SQL syntax
+		if math.IsNaN(float64(f)) || math.IsInf(float64(f), 0) {
+			return "", fmt.Errorf("invalid embedding value at index %d: %v", i, f)
+		}
 		strs[i] = fmt.Sprintf("%g", f)
 	}
-	return "[" + strings.Join(strs, ",") + "]"
+	return "[" + strings.Join(strs, ",") + "]", nil
 }
 
 // ChunkContext holds the result of GetChunkContext.

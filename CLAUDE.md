@@ -40,3 +40,7 @@ cd frontend && npm run dev
 ## Current Work
 
 See `ROADMAP.md` for phase status. Active development on Phase 9 (Browser Extension).
+
+## Known Issues
+
+See `issues.md` for tracked limitations and technical debt. This file documents issues that are acceptable for local use but should be addressed before production deployment.

@@ -83,10 +83,10 @@
 - [x] Integration test for full HTML ingestion flow
 - [x] Upsert behavior: replacing existing content when same URL submitted again
 
-### 9.3a Scaffold Fixes (from review)
-- [ ] Fix async message handler pattern in `background.js` (use async IIFE)
-- [ ] Add timeout handling to popup message helper
-- [ ] Fix API helper to check content-type before parsing JSON
+### 9.3a Scaffold Fixes (from review) ✓
+- [x] Fix async message handler pattern in `background.js` (use async IIFE)
+- [x] Add timeout handling to popup message helper
+- [x] Fix API helper to check content-type before parsing JSON
 
 ### 9.3b Popup UI — Form Structure
 - [ ] Text preview area (readonly textarea or div)
@@ -142,5 +142,8 @@ Security and reliability improvements for production deployment:
 - [ ] **CORS Configuration** - Restrict access to extension-only or trusted origins
 - [ ] **Request Size Monitoring** - Alerting on unusual request patterns
 - [ ] **Graceful Degradation** - Fallback behavior when services unavailable
+- [ ] **SSRF Protection Enhancement** - Add DNS resolution check to block domain-to-internal-IP attacks
+- [ ] **Upsert Race Condition Fix** - Add distributed locking for concurrent upsert requests
+- [ ] **API Consistency** - Add upsert support to `/ingest` endpoint (match `/ingest/html` behavior)
 
-**Note:** Phase 9 focuses on local development use. Production hardening deferred to Phase 10.
+**Note:** Phase 9 focuses on local development use. Production hardening deferred to Phase 10. See `issues.md` for detailed documentation of known limitations.

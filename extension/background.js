@@ -18,14 +18,35 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log('Background received message:', message);
 
-  // Message handling will be implemented in later phases
-  // For now, just acknowledge receipt
-  sendResponse({ status: 'received' });
+  // Use async IIFE pattern to handle async operations properly
+  // This keeps the message channel open while the async work completes
+  try {
+    (async () => {
+      try {
+        // Message routing will be implemented in later phases
+        // For now, echo back the received message
+        sendResponse({ status: 'received', echo: message });
+      } catch (error) {
+        console.error('Message handler error:', error);
+        sendResponse({ status: 'error', message: error.message });
+      }
+    })();
+  } catch (error) {
+    // Extremely rare: only if IIFE creation itself fails
+    console.error('Message handler setup error:', error);
+    sendResponse({ status: 'error', message: error.message });
+  }
 
   return true; // Keep channel open for async response
 });
 
-// Helper function for API calls (to be used in later phases)
+/**
+ * Make an API call to the Corpus backend
+ * @param {string} endpoint - API endpoint path (e.g., '/ingest/html')
+ * @param {object} options - Fetch options (method, body, headers, etc.)
+ * @returns {Promise<object|null>} - Parsed JSON response, or null for non-JSON responses (e.g., 204 No Content)
+ * @throws {Error} - If request fails or response is not OK
+ */
 async function callCorpusAPI(endpoint, options = {}) {
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {

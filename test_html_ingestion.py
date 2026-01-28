@@ -107,7 +107,7 @@ def test_html_ingestion():
         print(f"      ✗ Failed to post HTML: {e}")
         print()
         print("Make sure the API server is running:")
-        print("  cd api && go run cmd/main.go")
+        print("  cd api && go run cmd/server/main.go")
         return False
     print()
 

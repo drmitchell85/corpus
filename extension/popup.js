@@ -22,12 +22,15 @@ document.addEventListener('DOMContentLoaded', () => {
 // Service workers can hibernate, so we add timeout protection
 async function sendToBackground(message, timeout = 5000) {
   return new Promise((resolve, reject) => {
+    let timedOut = false;
     const timer = setTimeout(() => {
+      timedOut = true;
       reject(new Error('Background worker timeout - service worker may have restarted'));
     }, timeout);
 
     chrome.runtime.sendMessage(message, (response) => {
       clearTimeout(timer);
+      if (timedOut) return; // Timeout already fired, ignore late response
       if (chrome.runtime.lastError) {
         reject(new Error(chrome.runtime.lastError.message));
       } else {

@@ -66,7 +66,21 @@ year: 2020
 genre: "essay"
 ```
 
-API checks if text exists in DuckDB. If not, it queues the text for processing. Workers pull from the queue, extract text (from URL or PDF), embed, and store.
+**Ingest HTML from browser**:
+```
+POST /ingest/html
+{
+  "html": "<html>...</html>",
+  "url": "https://example.com/article",
+  "metadata": {
+    "author": "Author Name",
+    "title": "Article Title",
+    "year": 2024
+  }
+}
+```
+
+API checks if text exists in DuckDB. If URL already exists, old chunks are replaced (upsert behavior). Workers pull from queue, extract text (from URL, PDF, or HTML), embed, and store.
 
 **Query the corpus**:
 - GET `/search?q=<query>&limit=<n>` → semantic search (requires embedding service)
@@ -85,13 +99,14 @@ API checks if text exists in DuckDB. If not, it queues the text for processing. 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │  USER SUBMITS TEXT                                              │
-│  POST /ingest (Gutenberg URL) or POST /upload (PDF file)        │
+│  POST /ingest (URL) | POST /upload (PDF) | POST /ingest/html   │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │  GO API                                                         │
-│  ├── Checks DuckDB for duplicates                               │
+│  ├── Validates request (SSRF protection, size limits)           │
+│  ├── Checks DuckDB for duplicates (upsert if exists)            │
 │  ├── Saves PDF to ./uploads/ (if PDF upload)                    │
 │  └── Queues job to Redis                                        │
 └─────────────────────────────────────────────────────────────────┘
@@ -101,6 +116,7 @@ API checks if text exists in DuckDB. If not, it queues the text for processing. 
 │  PYTHON WORKER (picks up job from Redis)                        │
 │  ├── workers/gutenberg.py fetches + strips boilerplate (URL)    │
 │  ├── workers/pdf.py extracts text from PDF (upload)             │
+│  ├── workers/html_extractor.py extracts text from HTML (browser)│
 │  ├── workers/chunker.py splits text into paragraphs             │
 │  ├── workers/embedder.py converts chunks → 384-dim vectors      │
 │  └── workers/db.py stores chunks + embeddings → DuckDB          │
