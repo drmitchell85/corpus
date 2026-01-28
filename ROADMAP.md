@@ -88,11 +88,11 @@
 - [x] Add timeout handling to popup message helper
 - [x] Fix API helper to check content-type before parsing JSON
 
-### 9.3b Popup UI — Form Structure
-- [ ] Text preview area (readonly textarea or div)
-- [ ] Title, author, tags input fields
-- [ ] Save / Cancel buttons with click handlers
-- [ ] Basic styling (matches Corpus aesthetic)
+### 9.3b Popup UI — Form Structure ✓
+- [x] Text preview area (readonly textarea or div)
+- [x] Title, author, tags input fields
+- [x] Save / Cancel buttons with click handlers
+- [x] Basic styling (matches Corpus aesthetic)
 
 ### 9.3c Popup UI — Background Integration
 - [ ] Message passing between popup and background worker

@@ -34,4 +34,162 @@ h1 {
   color: #555;
 }
 
-/* Form styles will be added in Phase 9.2 */
+/* ============================================================================
+   Form Styles - Phase 9.3b
+   ============================================================================ */
+
+#save-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-group label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2c3e50;
+  letter-spacing: 0.3px;
+}
+
+.form-group .optional {
+  font-weight: 400;
+  font-size: 12px;
+  color: #5a6c7d;
+  font-style: italic;
+}
+
+/* Text preview area - readonly display */
+.text-preview {
+  min-height: 120px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 8px;
+  border: 1px solid #d4cfc4;
+  border-radius: 2px;
+  background: #f4f1e8;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #2c3e50;
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+.text-preview .placeholder {
+  margin: 0;
+  color: #5a6c7d;
+  font-style: italic;
+  font-size: 13px;
+}
+
+/* Input fields */
+input[type="text"] {
+  padding: 8px;
+  border: 1px solid #d4cfc4;
+  border-radius: 2px;
+  font-size: 14px;
+  font-family: Georgia, 'Times New Roman', serif;
+  background: white;
+  color: #2c3e50;
+  transition: border-color 0.2s ease;
+}
+
+input[type="text"]:focus {
+  outline: none;
+  border-color: #8b4513;
+  box-shadow: 0 0 0 2px rgba(139, 69, 19, 0.1);
+}
+
+input[type="text"]::placeholder {
+  color: #999;
+  font-style: italic;
+}
+
+/* Button group */
+.button-group {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* Base button styles */
+.btn {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 2px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: Georgia, 'Times New Roman', serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: 0.3px;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Primary button (Save) */
+.btn-primary {
+  background: #8b4513;
+  color: #faf8f3;
+  border: 2px solid #8b4513;
+}
+
+.btn-primary:hover {
+  background: #723a0f;
+  border-color: #723a0f;
+}
+
+.btn-primary:disabled {
+  background: #8b4513;
+  border-color: #8b4513;
+}
+
+/* Secondary button (Cancel) */
+.btn-secondary {
+  background: white;
+  color: #2c3e50;
+  border: 2px solid #d4cfc4;
+}
+
+.btn-secondary:hover {
+  background: #f4f1e8;
+  border-color: #8b4513;
+}
+
+/* Scrollbar styling for text preview */
+.text-preview::-webkit-scrollbar {
+  width: 8px;
+}
+
+.text-preview::-webkit-scrollbar-track {
+  background: #e8e4db;
+  border-radius: 2px;
+}
+
+.text-preview::-webkit-scrollbar-thumb {
+  background: #d4cfc4;
+  border-radius: 2px;
+}
+
+.text-preview::-webkit-scrollbar-thumb:hover {
+  background: #8b4513;
+}

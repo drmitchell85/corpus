@@ -13,15 +13,62 @@
     </header>
 
     <main>
-      <p class="status">Extension loaded. UI will be implemented in Phase 9.2.</p>
+      <form id="save-form">
+        <!-- Text preview area - readonly, shows captured content -->
+        <div class="form-group">
+          <label for="text-preview">Text Preview</label>
+          <div id="text-preview" class="text-preview" contenteditable="false">
+            <!-- Content will be populated by JavaScript -->
+            <p class="placeholder">No content captured yet. Use context menu or click the extension icon on a page.</p>
+          </div>
+        </div>
 
-      <!-- Phase 9.2 will add:
-           - Text preview area
-           - Title input
-           - Author input
-           - Tags input
-           - Save/Cancel buttons
-      -->
+        <!-- Title input - user can edit extracted title -->
+        <div class="form-group">
+          <label for="title">Title</label>
+          <input
+            type="text"
+            id="title"
+            name="title"
+            placeholder="Document title (auto-extracted or enter manually)"
+            maxlength="500"
+          />
+        </div>
+
+        <!-- Author input - optional metadata -->
+        <div class="form-group">
+          <label for="author">Author <span class="optional">(optional)</span></label>
+          <input
+            type="text"
+            id="author"
+            name="author"
+            placeholder="Author name"
+            maxlength="200"
+          />
+        </div>
+
+        <!-- Tags input - comma-separated -->
+        <div class="form-group">
+          <label for="tags">Tags <span class="optional">(optional)</span></label>
+          <input
+            type="text"
+            id="tags"
+            name="tags"
+            placeholder="Comma-separated tags (e.g. philosophy, ethics, kant)"
+            maxlength="200"
+          />
+        </div>
+
+        <!-- Action buttons -->
+        <div class="button-group">
+          <button type="submit" id="save-btn" class="btn btn-primary">
+            Save to Corpus
+          </button>
+          <button type="button" id="cancel-btn" class="btn btn-secondary">
+            Cancel
+          </button>
+        </div>
+      </form>
     </main>
   </div>
 
