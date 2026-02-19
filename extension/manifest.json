@@ -11,8 +11,13 @@
     "tabs"
   ],
   "host_permissions": [
-    "http://localhost:8080/*"
+    "http://localhost/*",
+    "http://127.0.0.1/*"
   ],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
   "background": {
     "service_worker": "background.js"
   },

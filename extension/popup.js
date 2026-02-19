@@ -208,6 +208,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.close();
   });
 
+  // Settings link — opens the extension options page in a new tab.
+  // openOptionsPage() returns a Promise in MV3; catch errors so a missing
+  // options_ui declaration doesn't produce an unhandled rejection.
+  document.getElementById('settings-link').addEventListener('click', (e) => {
+    e.preventDefault();
+    chrome.runtime.openOptionsPage().catch((err) => {
+      console.warn('Could not open options page:', err.message);
+    });
+  });
+
 });
 
 /**

@@ -228,6 +228,29 @@ input[type="text"]::placeholder {
   color: #7a2020;
 }
 
+/* ============================================================================
+   Footer — Phase 9.6c
+   ============================================================================ */
+
+footer {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid #e8e4db;
+  text-align: right;
+}
+
+.settings-link {
+  font-size: 11px;
+  color: #5a6c7d;
+  text-decoration: none;
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+.settings-link:hover {
+  color: #003d7a;
+  text-decoration: underline;
+}
+
 /* Scrollbar styling for text preview */
 .text-preview::-webkit-scrollbar {
   width: 8px;

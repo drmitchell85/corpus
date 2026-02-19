@@ -4,7 +4,27 @@
 console.log('Corpus background service worker loaded');
 
 // Configuration
-const API_BASE_URL = 'http://localhost:8080';
+// To change the API URL without editing code, open the extension's Settings page
+// (right-click the toolbar icon → Options), or update DEFAULT_API_BASE_URL here.
+const DEFAULT_API_BASE_URL = 'http://localhost:8080';
+
+/**
+ * Read the user-configured API base URL from local storage.
+ * Falls back to DEFAULT_API_BASE_URL if no custom URL is stored.
+ * Called per-request so changes take effect immediately without a service worker restart.
+ *
+ * @returns {Promise<string>} The API base URL to use
+ */
+async function getApiBaseUrl() {
+  try {
+    const result = await chrome.storage.local.get('apiBaseUrl');
+    // Strip trailing slashes so endpoint paths like '/ingest/html' don't produce
+    // double slashes (e.g., 'http://localhost:8080//ingest/html') when concatenated.
+    return (result.apiBaseUrl || DEFAULT_API_BASE_URL).replace(/\/+$/, '');
+  } catch {
+    return DEFAULT_API_BASE_URL;
+  }
+}
 
 // Key used in chrome.storage.session to pass captured content to the popup
 const CAPTURE_STORAGE_KEY = 'corpus_capture';
@@ -346,13 +366,25 @@ async function handleIngestHTML(payload, sendResponse) {
  * @throws {Error} If request fails or response is not OK
  */
 async function callCorpusAPI(endpoint, options = {}) {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
+  const apiBaseUrl = await getApiBaseUrl();
+
+  let response;
+  try {
+    response = await fetch(`${apiBaseUrl}${endpoint}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    });
+  } catch (networkError) {
+    // fetch() throws TypeError when the server is unreachable (connection refused,
+    // DNS lookup failure, no network). Replace the raw browser error string with a
+    // user-friendly message that names the URL so the user knows where to look.
+    // Log the original error for debugging without exposing it to the user.
+    console.warn('Fetch failed (network error):', networkError.message);
+    throw new Error(`API unreachable — is the Corpus server running at ${apiBaseUrl}?`);
+  }
 
   if (!response.ok) {
     // Try to extract a message from the error body
@@ -360,7 +392,7 @@ async function callCorpusAPI(endpoint, options = {}) {
     try {
       const errBody = await response.json();
       if (errBody.error) errMessage = errBody.error;
-    } catch (_) {
+    } catch {
       // Body wasn't JSON — use status text
     }
     throw new Error(`API error: ${errMessage}`);

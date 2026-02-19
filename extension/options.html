@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Corpus Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Corpus</h1>
+      <p class="subtitle">Settings</p>
+    </header>
+
+    <main>
+      <section class="settings-section">
+        <h2>API Connection</h2>
+        <form id="settings-form">
+          <div class="form-group">
+            <label for="api-url">API Base URL</label>
+            <input
+              type="url"
+              id="api-url"
+              name="api-url"
+              placeholder="http://localhost:8080"
+              maxlength="500"
+              spellcheck="false"
+            />
+            <p class="hint">
+              The URL of your Corpus server. Default: <code>http://localhost:8080</code><br>
+              Only <code>localhost</code> and <code>127.0.0.1</code> are supported as hosts.
+              Change the port to match your server if needed (e.g., <code>http://localhost:9090</code>).
+            </p>
+          </div>
+
+          <div id="status-message" class="status-message" role="alert" aria-live="polite" hidden></div>
+
+          <div class="button-group">
+            <button type="submit" id="save-btn" class="btn btn-primary">Save</button>
+            <button type="button" id="reset-btn" class="btn btn-secondary">Reset to Default</button>
+          </div>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

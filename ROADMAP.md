@@ -128,10 +128,10 @@
 - [x] Error message with reason ("✗ Failed: connection refused")
 - [x] Auto-close popup after successful save (optional)
 
-### 9.6c Polish — Error Handling & Config
-- [ ] Handle offline/unreachable API gracefully
-- [ ] API endpoint configurable via constant
-- [ ] Optional: Settings page for custom API URL
+### 9.6c Polish — Error Handling & Config ✓
+- [x] Handle offline/unreachable API gracefully
+- [x] API endpoint configurable via constant
+- [x] Optional: Settings page for custom API URL
 
 ## Phase 10: Deployment Hardening (Future)
 
