@@ -112,11 +112,11 @@
 - [x] Extract page title, URL, domain automatically
 - [x] Store captured HTML in `chrome.storage.session`
 
-### 9.5b Full Page — Popup Flow
-- [ ] Browser action click triggers content script injection
-- [ ] Send HTML to `/ingest/html`, receive extracted text
-- [ ] Populate popup with extracted text and auto-filled title
-- [ ] User can edit metadata before final save
+### 9.5b Full Page — Popup Flow ✓
+- [x] Browser action click triggers content script injection
+- [x] Send HTML to `/ingest/html`, receive extracted text
+- [x] Populate popup with extracted text and auto-filled title
+- [x] User can edit metadata before final save
 
 ### 9.6a Polish — Loading States
 - [ ] Loading spinner in popup during save

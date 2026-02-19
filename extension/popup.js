@@ -18,15 +18,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   const titleInput = document.getElementById('title');
   const authorInput = document.getElementById('author');
 
-  // Load captured content from background on popup open
+  // Load captured content from background on popup open.
+  // If there is existing capture data (e.g. from the context menu, Phase 9.4), use it.
+  // Otherwise auto-capture the current page (Phase 9.5b: toolbar icon click flow).
   try {
     const response = await sendToBackground({ action: 'GET_CAPTURE' });
     if (response.status === 'ok' && response.capture) {
       capturedData = response.capture;
       setPreviewContent(capturedData.text || '');
       if (capturedData.title) titleInput.value = capturedData.title;
+    } else {
+      await captureCurrentPage();
     }
-    // If no capture, the placeholder text remains visible
   } catch (error) {
     // Background may have restarted — not fatal, placeholder stays
     console.warn('Could not load capture from background:', error.message);
@@ -47,6 +50,45 @@ document.addEventListener('DOMContentLoaded', async () => {
       placeholder.remove();
     }
     textPreview.textContent = content;
+  }
+
+  /**
+   * Auto-capture the current tab's HTML when the popup opens without existing capture data.
+   * Called when the user clicks the toolbar icon directly (no pre-stored capture from
+   * the context menu flow). Sends CAPTURE_PAGE to the background service worker, which
+   * injects a one-shot script into the active tab to read outerHTML and page metadata.
+   *
+   * Shows a loading state in the preview area while injection runs, then populates
+   * the form on success. On failure (restricted page, oversized page, no active tab),
+   * displays the error message in the preview area so the user understands what happened.
+   * The save button is disabled during capture and re-enabled when done.
+   */
+  async function captureCurrentPage() {
+    setPreviewContent('Capturing page\u2026');
+    saveBtn.disabled = true;
+
+    try {
+      const captureResponse = await sendToBackground({ action: 'CAPTURE_PAGE' });
+      if (captureResponse.status !== 'ok') {
+        // Restricted page, page too large, no active tab found, etc.
+        setPreviewContent(captureResponse.message || 'Could not capture page.');
+        return;
+      }
+      // Capture stored in session — fetch it and populate the form.
+      const response = await sendToBackground({ action: 'GET_CAPTURE' });
+      if (response.status === 'ok' && response.capture) {
+        capturedData = response.capture;
+        setPreviewContent(capturedData.text || '');
+        if (capturedData.title) titleInput.value = capturedData.title;
+      } else {
+        setPreviewContent('Could not load captured content.');
+      }
+    } catch (error) {
+      console.warn('Page capture failed:', error.message);
+      setPreviewContent('Capture failed: ' + error.message);
+    } finally {
+      saveBtn.disabled = false;
+    }
   }
 
   // Save button handler
@@ -123,9 +165,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.close();
   });
 
-  // Phase 9.5b will trigger full-page capture here:
-  // - Send CAPTURE_PAGE to background to inject into active tab and store HTML
-  // - Popup then loads and displays the captured content via GET_CAPTURE
 });
 
 /**
