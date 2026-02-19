@@ -106,11 +106,11 @@
 - [x] Open popup with selected text pre-filled
 - [x] POST to `/ingest/html` endpoint on save
 
-### 9.5a Full Page — Content Capture
-- [ ] Add `tabs` permission to manifest.json
-- [ ] Content script captures `document.documentElement.outerHTML`
-- [ ] Extract page title, URL, domain automatically
-- [ ] Store captured HTML in `chrome.storage.session`
+### 9.5a Full Page — Content Capture ✓
+- [x] Add `tabs` permission to manifest.json
+- [x] Content script captures `document.documentElement.outerHTML`
+- [x] Extract page title, URL, domain automatically
+- [x] Store captured HTML in `chrome.storage.session`
 
 ### 9.5b Full Page — Popup Flow
 - [ ] Browser action click triggers content script injection

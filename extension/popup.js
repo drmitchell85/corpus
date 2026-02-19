@@ -123,9 +123,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.close();
   });
 
-  // Phase 9.5 will implement:
-  // - Full page HTML capture via content script → stored in chrome.storage.session
-  // - Auto-fill title/URL from page metadata
+  // Phase 9.5b will trigger full-page capture here:
+  // - Send CAPTURE_PAGE to background to inject into active tab and store HTML
+  // - Popup then loads and displays the captured content via GET_CAPTURE
 });
 
 /**

@@ -9,6 +9,9 @@ const API_BASE_URL = 'http://localhost:8080';
 // Key used in chrome.storage.session to pass captured content to the popup
 const CAPTURE_STORAGE_KEY = 'corpus_capture';
 
+// Must match maxHTMLSize in api/internal/handler/ingest_html.go
+const MAX_HTML_BYTES = 10 * 1024 * 1024; // 10 MB
+
 // Initialize on install/update — register persistent context menu item.
 // Context menu items survive service worker hibernation; they only need to
 // be (re-)created when the extension is installed or updated.
@@ -164,9 +167,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Reject messages from outside this extension (e.g., other extensions).
   // NOTE: sender.id matches for ALL extension contexts — popup, options page,
   // and content scripts injected into web pages. It does NOT isolate against
-  // a content script relaying an attacker-crafted message. When content scripts
-  // are added in Phase 9.5, validate message.action against an allowlist
-  // and enforce payload schema before dispatching to handleIngestHTML.
+  // a content script relaying an attacker-crafted message. Phase 9.5 uses
+  // executeScript (one-shot dynamic injection), not persistent content scripts,
+  // so this risk surface hasn't changed. If persistent content scripts are added
+  // later, validate message.action against an allowlist and enforce payload schema.
   if (sender.id !== chrome.runtime.id) {
     console.warn('Rejected message from unknown sender:', sender.id);
     sendResponse({ status: 'error', message: 'Unauthorized sender' });
@@ -179,6 +183,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       switch (message.action) {
         case 'GET_CAPTURE':
           await handleGetCapture(sendResponse);
+          break;
+        case 'CAPTURE_PAGE':
+          await handleCapturePage(sendResponse);
           break;
         case 'INGEST_HTML':
           await handleIngestHTML(message.payload, sendResponse);
@@ -207,14 +214,85 @@ async function handleGetCapture(sendResponse) {
 }
 
 /**
+ * Capture the full HTML of the currently active tab and store it in session storage.
+ *
+ * Uses chrome.tabs.query() to find the active tab (requires 'tabs' permission),
+ * then injects a one-shot script via executeScript to read outerHTML and metadata.
+ * The popup reads this on open via GET_CAPTURE and presents it for user review.
+ *
+ * The 'text' field is a brief innerText excerpt for popup preview only — the worker
+ * extracts clean readable text from 'html' server-side via readability-lxml.
+ */
+async function handleCapturePage(sendResponse) {
+  // Find the currently active tab. 'tabs' permission allows chrome.tabs.query()
+  // to return full tab metadata (url, title); without it they're redacted. We get
+  // URL/title from executeScript anyway, but tabs makes the API contract explicit.
+  // lastFocusedWindow tracks whichever browser window the user most recently used,
+  // regardless of which window Chrome considers "current" when this async call runs.
+  // More reliable than currentWindow for detached popups and multi-monitor setups.
+  const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+  const tab = tabs[0];
+
+  if (!tab?.id) {
+    sendResponse({ status: 'error', message: 'No active tab found' });
+    return;
+  }
+
+  // Inject a one-shot script to read the full page HTML and metadata.
+  // Throws on restricted pages (chrome://, file://, chrome-extension://) —
+  // caught by the outer try/catch in the message handler.
+  const frames = await chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    func: () => ({
+      // outerHTML starts with <html> — the DOCTYPE declaration is not part of any
+      // DOM element, so it must be prepended manually for a complete document.
+      html: '<!DOCTYPE html>\n' + document.documentElement.outerHTML,
+      title: document.title,
+      url: location.href,
+      // Brief excerpt for popup preview; full text extraction happens server-side.
+      // innerText can be slow on large pages but is only called once per capture.
+      text: document.body?.innerText?.slice(0, 500) || '',
+    }),
+  });
+  // executeScript returns [] if the page is still loading or the frame is gone.
+  const result = frames?.[0]?.result ?? null;
+
+  if (!result?.html) {
+    sendResponse({ status: 'error', message: 'Could not capture page content' });
+    return;
+  }
+
+  // Guard against session storage quota (~10 MB per extension). Full-page outerHTML
+  // for complex pages (news sites, SPAs with embedded JSON) can easily exceed this.
+  // Use Blob.size for accurate byte count (vs str.length which is UTF-16 code units).
+  // This gives a user-friendly error instead of a raw "QUOTA_BYTES quota exceeded".
+  const htmlBytes = new Blob([result.html]).size;
+  if (htmlBytes > MAX_HTML_BYTES) {
+    sendResponse({ status: 'error', message: 'Page too large to capture (exceeds 10 MB)' });
+    return;
+  }
+
+  // Store in session storage — same schema as selection capture (Phase 9.4).
+  // The popup reads this on open via GET_CAPTURE; handleIngestHTML sends html to API.
+  await chrome.storage.session.set({
+    [CAPTURE_STORAGE_KEY]: {
+      html: result.html,
+      text: result.text,
+      title: result.title || '',
+      url: result.url || '',
+      timestamp: Date.now(),
+    },
+  });
+
+  sendResponse({ status: 'ok' });
+}
+
+/**
  * POST captured HTML to the Corpus API and clear storage on success.
  *
  * Expected payload shape:
  *   { html: string, url?: string, metadata?: { title: string, author?: string } }
  */
-// Must match maxHTMLSize in api/internal/handler/ingest_html.go
-const MAX_HTML_BYTES = 10 * 1024 * 1024; // 10 MB
-
 async function handleIngestHTML(payload, sendResponse) {
   if (!payload || typeof payload !== 'object') {
     sendResponse({ status: 'error', message: 'Invalid payload' });
@@ -224,7 +302,8 @@ async function handleIngestHTML(payload, sendResponse) {
 
   // Guard before fetch: a large POST can outlive the popup's 5s sendToBackground
   // timeout, causing a "timeout" error even though the save succeeds server-side.
-  if (!html || html.length > MAX_HTML_BYTES) {
+  // Use Blob.size for byte count (consistent with handleCapturePage's size check).
+  if (!html || new Blob([html]).size > MAX_HTML_BYTES) {
     sendResponse({
       status: 'error',
       message: html ? 'HTML content too large (max 10 MB)' : 'HTML content is required',
