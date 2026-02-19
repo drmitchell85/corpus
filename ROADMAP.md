@@ -118,10 +118,10 @@
 - [x] Populate popup with extracted text and auto-filled title
 - [x] User can edit metadata before final save
 
-### 9.6a Polish — Loading States
-- [ ] Loading spinner in popup during save
-- [ ] Disable save button while request in flight
-- [ ] Prevent duplicate submissions
+### 9.6a Polish — Loading States ✓
+- [x] Loading spinner in popup during save
+- [x] Disable save button while request in flight
+- [x] Prevent duplicate submissions
 
 ### 9.6b Polish — User Feedback
 - [ ] Success message ("✓ Saved to Corpus")

@@ -128,6 +128,10 @@ input[type="text"]::placeholder {
   cursor: pointer;
   transition: all 0.2s ease;
   letter-spacing: 0.3px;
+  /* Flex layout ensures spinner and label stay vertically centred cross-platform */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn:hover {
@@ -173,6 +177,31 @@ input[type="text"]::placeholder {
 .btn-secondary:hover {
   background: #f4f1e8;
   border-color: #8b4513;
+}
+
+/* ============================================================================
+   Loading Spinner — Phase 9.6a
+   ============================================================================ */
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Spinner sits inside .btn-primary; hidden by default, shown when .loading is set */
+.spinner {
+  display: none;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(250, 248, 243, 0.4);
+  border-top-color: #faf8f3;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+/* Animation only runs when the spinner is visible — no idle keyframe cost */
+.btn-primary.loading .spinner {
+  display: inline-block;
+  animation: spin 0.7s linear infinite;
 }
 
 /* Scrollbar styling for text preview */

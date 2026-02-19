@@ -17,6 +17,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const textPreview = document.getElementById('text-preview');
   const titleInput = document.getElementById('title');
   const authorInput = document.getElementById('author');
+  const saveBtnLabel = document.getElementById('save-btn-label');
+
+  // Tracks whether a save request is in flight. Guards against double-submission
+  // from rapid clicks or programmatic form.requestSubmit() calls.
+  let isSaving = false;
 
   // Load captured content from background on popup open.
   // If there is existing capture data (e.g. from the context menu, Phase 9.4), use it.
@@ -68,7 +73,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     saveBtn.disabled = true;
 
     try {
-      const captureResponse = await sendToBackground({ action: 'CAPTURE_PAGE' });
+      const captureResponse = await sendToBackground({ action: 'CAPTURE_PAGE' }, 15000);
       if (captureResponse.status !== 'ok') {
         // Restricted page, page too large, no active tab found, etc.
         setPreviewContent(captureResponse.message || 'Could not capture page.');
@@ -78,23 +83,44 @@ document.addEventListener('DOMContentLoaded', async () => {
       const response = await sendToBackground({ action: 'GET_CAPTURE' });
       if (response.status === 'ok' && response.capture) {
         capturedData = response.capture;
-        setPreviewContent(capturedData.text || '');
+        // Show a clear message if the page had no readable text (image-only pages, etc.)
+        if (capturedData.text?.trim()) {
+          setPreviewContent(capturedData.text);
+        } else {
+          setPreviewContent('Page captured. No readable text preview available.');
+        }
         if (capturedData.title) titleInput.value = capturedData.title;
       } else {
         setPreviewContent('Could not load captured content.');
       }
     } catch (error) {
+      // Log the raw Chrome error for debugging; show a user-friendly message in the UI.
       console.warn('Page capture failed:', error.message);
-      setPreviewContent('Capture failed: ' + error.message);
+      setPreviewContent('Could not capture page. Try refreshing and clicking the extension icon again.');
     } finally {
-      saveBtn.disabled = false;
+      // Guard against trampling save loading state if a save is somehow in flight.
+      if (!isSaving) saveBtn.disabled = false;
     }
+  }
+
+  /**
+   * Toggle the save button's loading state.
+   * Centralises all state mutations: disabled flag, CSS class, and label text.
+   * @param {boolean} saving
+   */
+  function setSaving(saving) {
+    saveBtn.disabled = saving;
+    saveBtn.classList.toggle('loading', saving);
+    saveBtnLabel.textContent = saving ? 'Saving\u2026' : 'Save to Corpus';
   }
 
   // Save button handler
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    console.log('Save button clicked');
+
+    // Belt-and-suspenders guard: disabled attribute prevents UI clicks, but this
+    // flag blocks any programmatic double-submission (e.g. form.requestSubmit()).
+    if (isSaving) return;
 
     const title = titleInput.value.trim();
     const author = authorInput.value.trim();
@@ -119,10 +145,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    // Disable button to prevent double-submission
-    saveBtn.disabled = true;
-    saveBtn.textContent = 'Saving...';
     let submitted = false;
+    isSaving = true;
+    setSaving(true);
 
     try {
       const response = await sendToBackground({
@@ -153,8 +178,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Don't re-enable if we already closed — guards against the finally block
       // running after window.close() when Phase 9.6b adds an in-popup success state.
       if (!submitted) {
-        saveBtn.disabled = false;
-        saveBtn.textContent = 'Save to Corpus';
+        isSaving = false;
+        setSaving(false);
       }
     }
   });
