@@ -3,8 +3,11 @@
 
 console.log('Corpus popup loaded');
 
-// Initialize popup
-document.addEventListener('DOMContentLoaded', () => {
+// Holds the capture data loaded from session storage on popup open.
+// This is the source of truth for both the preview and the save payload.
+let capturedData = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
   console.log('Popup DOM ready');
 
   // Get form elements
@@ -14,98 +17,103 @@ document.addEventListener('DOMContentLoaded', () => {
   const textPreview = document.getElementById('text-preview');
   const titleInput = document.getElementById('title');
   const authorInput = document.getElementById('author');
-  const tagsInput = document.getElementById('tags');
 
-  // Phase 9.3c will implement:
-  // - Load selected text from chrome.storage.session
-  // - Populate form fields with captured content using setPreviewContent()
-  // - Send message to background worker on save
+  // Load captured content from background on popup open
+  try {
+    const response = await sendToBackground({ action: 'GET_CAPTURE' });
+    if (response.status === 'ok' && response.capture) {
+      capturedData = response.capture;
+      setPreviewContent(capturedData.text || '');
+      if (capturedData.title) titleInput.value = capturedData.title;
+    }
+    // If no capture, the placeholder text remains visible
+  } catch (error) {
+    // Background may have restarted — not fatal, placeholder stays
+    console.warn('Could not load capture from background:', error.message);
+  }
 
   /**
-   * Helper function to populate the text preview area
-   * Removes placeholder element and sets new content
+   * Populate the text preview area with captured content.
+   * Removes the placeholder element and sets plain text via textContent (XSS-safe).
    *
-   * @param {string} content - Text content to display (plain text, not HTML)
+   * INVARIANT: Always use textContent here, never innerHTML.
+   * The preview content comes from untrusted web pages.
    *
-   * NOTE: This function is for Phase 9.3c/9.4/9.5 implementation.
-   * It ensures the .placeholder element is properly removed before setting content,
-   * which is required for validation to work correctly.
-   *
-   * Usage in Phase 9.3c:
-   *   setPreviewContent(extractedText);  // After loading from chrome.storage
+   * @param {string} content - Plain text to display
    */
   function setPreviewContent(content) {
-    // Remove placeholder element if it exists
     const placeholder = textPreview.querySelector('.placeholder');
     if (placeholder) {
       placeholder.remove();
     }
-
-    // Set new content (plain text for display)
     textPreview.textContent = content;
   }
 
-  // Make helper available for future phases (Phase 9.3c will call this)
-  window.setPreviewContent = setPreviewContent;
-
-  // Save button handler (Phase 9.3c will connect to background)
+  // Save button handler
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     console.log('Save button clicked');
 
-    // Get form data
-    // NOTE: formData.text is for display/validation only.
-    // The actual HTML payload sent to API comes from chrome.storage.session (Phase 9.3c).
-    // Architecture: Content Script → captures HTML → storage → Background Worker → API
-    //               Popup only displays extracted text preview for user confirmation.
-    const formData = {
-      title: titleInput.value.trim(),
-      author: authorInput.value.trim(),
-      tags: tagsInput.value.trim(),
-      text: textPreview.textContent.trim(),  // Display text for validation
-    };
+    const title = titleInput.value.trim();
+    const author = authorInput.value.trim();
 
-    // Validate required fields BEFORE disabling button
-    // This prevents button staying disabled if validation fails
-    if (!formData.title) {
+    // Validate against capturedData (the data model), not the DOM.
+    // DOM state can diverge from data (e.g., setPreviewContent('') removes the
+    // placeholder but leaves textContent empty), so we validate the source of truth.
+    if (!title) {
       alert('Please enter a title');
       return;
     }
-
-    // Check if placeholder element still exists (more robust than string comparison)
-    // IMPORTANT FOR PHASE 9.3c: When loading content, you MUST remove the <p class="placeholder">
-    // element from the DOM. Use the setPreviewContent() helper function defined below.
-    if (textPreview.querySelector('.placeholder')) {
+    if (!capturedData) {
       alert('No content captured yet. Use the context menu or click the extension icon on a page.');
       return;
     }
-
-    // Check if preview content is empty (user manually cleared it)
-    if (!formData.text) {
+    if (!capturedData.text?.trim()) {
       alert('Preview is empty. Content cannot be blank.');
       return;
     }
+    if (!capturedData.html) {
+      alert('No captured HTML found. Please re-capture the page.');
+      return;
+    }
 
-    console.log('Form data:', formData);
-
-    // Validation passed - now disable button to prevent double-submission
+    // Disable button to prevent double-submission
     saveBtn.disabled = true;
     saveBtn.textContent = 'Saving...';
+    let submitted = false;
 
     try {
-      // Phase 9.3c will implement:
-      // - Send to background worker via sendToBackground()
-      // - Background worker calls POST /ingest/html
-      // - Show success/error feedback
+      const response = await sendToBackground({
+        action: 'INGEST_HTML',
+        payload: {
+          html: capturedData.html,
+          ...(capturedData.url && { url: capturedData.url }),
+          metadata: {
+            title,
+            ...(author && { author }),
+          },
+        },
+      });
 
-      alert('Save functionality will be implemented in Phase 9.3c');
+      if (response.status === 'success') {
+        submitted = true;
+        // Phase 9.6b will replace this with in-popup success UI
+        alert(`✓ Saved to Corpus`);
+        window.close();
+      } else {
+        throw new Error(response.message || 'Save failed');
+      }
     } catch (error) {
       console.error('Save error:', error);
+      // Phase 9.6b will replace this with in-popup error UI
       alert(`Error: ${error.message}`);
     } finally {
-      // Re-enable button
-      saveBtn.disabled = false;
-      saveBtn.textContent = 'Save to Corpus';
+      // Don't re-enable if we already closed — guards against the finally block
+      // running after window.close() when Phase 9.6b adds an in-popup success state.
+      if (!submitted) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save to Corpus';
+      }
     }
   });
 
@@ -116,40 +124,40 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Phase 9.4 will implement:
-  // - Load text from chrome.storage.session (context menu selection)
-  // - Auto-populate title from page metadata
+  // - Capture selected text via context menu → stored in chrome.storage.session
+  // - GET_CAPTURE above will then return the selection
 
   // Phase 9.5 will implement:
-  // - Full page HTML capture
-  // - Extract title/author automatically
-  // - Pre-fill form with extracted data
+  // - Full page HTML capture via content script → stored in chrome.storage.session
+  // - Auto-fill title/URL from page metadata
 });
 
 /**
- * Helper function to send messages to background worker
- * Service workers can hibernate, so we add timeout protection
+ * Send a message to the background service worker with timeout protection.
+ * Service workers can hibernate, causing the port to close; the timeout
+ * ensures the popup doesn't hang indefinitely.
  *
- * @param {object} message - Message object to send to background worker
- * @param {number} timeout - Timeout in milliseconds (default: 5000ms)
- * @returns {Promise<object>} - Response from background worker
- * @throws {Error} - If timeout occurs or chrome.runtime.lastError is set
- *
- * NOTE: This function is prepared for Phase 9.3c integration.
- * Currently not called by the save handler (which shows a placeholder alert).
+ * @param {object} message  - Message to send (must include an `action` field)
+ * @param {number} timeout  - Timeout in ms (default: 5000)
+ * @returns {Promise<object>} Response from background worker
+ * @throws {Error} On timeout or if chrome.runtime.lastError is set
  */
 async function sendToBackground(message, timeout = 5000) {
   return new Promise((resolve, reject) => {
     let timedOut = false;
     const timer = setTimeout(() => {
       timedOut = true;
-      reject(new Error('Background worker timeout - service worker may have restarted'));
+      reject(new Error('Background worker timeout — service worker may have restarted'));
     }, timeout);
 
     chrome.runtime.sendMessage(message, (response) => {
       clearTimeout(timer);
-      if (timedOut) return; // Timeout already fired, ignore late response
-      if (chrome.runtime.lastError) {
-        reject(new Error(chrome.runtime.lastError.message));
+      // Consume lastError unconditionally — Chrome logs an "Unchecked runtime.lastError"
+      // warning if any code path returns without accessing it, including the timedOut path.
+      const lastError = chrome.runtime.lastError;
+      if (timedOut) return; // Late response after timeout — ignore
+      if (lastError) {
+        reject(new Error(lastError.message));
       } else {
         resolve(response);
       }

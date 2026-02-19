@@ -90,14 +90,14 @@
 
 ### 9.3b Popup UI — Form Structure ✓
 - [x] Text preview area (readonly textarea or div)
-- [x] Title, author, tags input fields
+- [x] Title, author input fields (tags removed — no API support)
 - [x] Save / Cancel buttons with click handlers
 - [x] Basic styling (matches Corpus aesthetic)
 
-### 9.3c Popup UI — Background Integration
-- [ ] Message passing between popup and background worker
-- [ ] Popup receives and displays content from background
-- [ ] Save button triggers API call via background worker
+### 9.3c Popup UI — Background Integration ✓
+- [x] Message passing between popup and background worker
+- [x] Popup receives and displays content from background
+- [x] Save button triggers API call via background worker
 
 ### 9.4 Context Menu — Selection Capture
 - [ ] Register context menu item "Save to Corpus" (`contexts: ["selection"]`)

@@ -4,7 +4,7 @@ import logging
 import re
 import time
 from lxml import html as lxml_html
-from lxml.html.clean import Cleaner
+from lxml_html_clean import Cleaner
 from readability import Document
 
 logger = logging.getLogger(__name__)
