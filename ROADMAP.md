@@ -123,10 +123,10 @@
 - [x] Disable save button while request in flight
 - [x] Prevent duplicate submissions
 
-### 9.6b Polish — User Feedback
-- [ ] Success message ("✓ Saved to Corpus")
-- [ ] Error message with reason ("✗ Failed: connection refused")
-- [ ] Auto-close popup after successful save (optional)
+### 9.6b Polish — User Feedback ✓
+- [x] Success message ("✓ Saved to Corpus")
+- [x] Error message with reason ("✗ Failed: connection refused")
+- [x] Auto-close popup after successful save (optional)
 
 ### 9.6c Polish — Error Handling & Config
 - [ ] Handle offline/unreachable API gracefully

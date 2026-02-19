@@ -204,6 +204,30 @@ input[type="text"]::placeholder {
   animation: spin 0.7s linear infinite;
 }
 
+/* ============================================================================
+   Status Message — Phase 9.6b
+   ============================================================================ */
+
+/* Sits in the form flex column; hidden by default via the `hidden` attribute */
+.status-message {
+  padding: 8px 12px;
+  border-radius: 2px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.status-message.success {
+  background: #eaf3e8;
+  border: 1px solid #5a8c52;
+  color: #2d5a27;
+}
+
+.status-message.error {
+  background: #f5eaea;
+  border: 1px solid #a04040;
+  color: #7a2020;
+}
+
 /* Scrollbar styling for text preview */
 .text-preview::-webkit-scrollbar {
   width: 8px;

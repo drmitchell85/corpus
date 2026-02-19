@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const titleInput = document.getElementById('title');
   const authorInput = document.getElementById('author');
   const saveBtnLabel = document.getElementById('save-btn-label');
+  const statusMessage = document.getElementById('status-message');
 
   // Tracks whether a save request is in flight. Guards against double-submission
   // from rapid clicks or programmatic form.requestSubmit() calls.
@@ -114,6 +115,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     saveBtnLabel.textContent = saving ? 'Saving\u2026' : 'Save to Corpus';
   }
 
+  /**
+   * Show an inline status message in the form.
+   * Replaces any previous status message.
+   * @param {'success'|'error'} type
+   * @param {string} message
+   */
+  function showStatus(type, message) {
+    statusMessage.textContent = message;
+    statusMessage.className = `status-message ${type}`;
+    statusMessage.hidden = false;
+  }
+
+  function clearStatus() {
+    statusMessage.hidden = true;
+    statusMessage.className = 'status-message';
+    statusMessage.textContent = '';
+  }
+
   // Save button handler
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -122,6 +141,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // flag blocks any programmatic double-submission (e.g. form.requestSubmit()).
     if (isSaving) return;
 
+    clearStatus();
+
     const title = titleInput.value.trim();
     const author = authorInput.value.trim();
 
@@ -129,19 +150,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     // DOM state can diverge from data (e.g., setPreviewContent('') removes the
     // placeholder but leaves textContent empty), so we validate the source of truth.
     if (!title) {
-      alert('Please enter a title');
+      showStatus('error', '✗ Please enter a title');
       return;
     }
     if (!capturedData) {
-      alert('No content captured yet. Use the context menu or click the extension icon on a page.');
+      showStatus('error', '✗ No content captured yet. Use the context menu or click the extension icon on a page.');
       return;
     }
     if (!capturedData.text?.trim()) {
-      alert('Preview is empty. Content cannot be blank.');
+      showStatus('error', '✗ Preview is empty. Content cannot be blank.');
       return;
     }
     if (!capturedData.html) {
-      alert('No captured HTML found. Please re-capture the page.');
+      showStatus('error', '✗ No captured HTML found. Please re-capture the page.');
       return;
     }
 
@@ -164,19 +185,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (response.status === 'success') {
         submitted = true;
-        // Phase 9.6b will replace this with in-popup success UI
-        alert(`✓ Saved to Corpus`);
-        window.close();
+        showStatus('success', '✓ Saved to Corpus');
+        setTimeout(() => window.close(), 1500);
       } else {
         throw new Error(response.message || 'Save failed');
       }
     } catch (error) {
       console.error('Save error:', error);
-      // Phase 9.6b will replace this with in-popup error UI
-      alert(`Error: ${error.message}`);
+      showStatus('error', `✗ Failed: ${error.message}`);
     } finally {
-      // Don't re-enable if we already closed — guards against the finally block
-      // running after window.close() when Phase 9.6b adds an in-popup success state.
+      // Don't re-enable if save succeeded — popup is closing on a timer.
       if (!submitted) {
         isSaving = false;
         setSaving(false);
