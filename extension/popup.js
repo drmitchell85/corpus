@@ -123,10 +123,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.close();
   });
 
-  // Phase 9.4 will implement:
-  // - Capture selected text via context menu → stored in chrome.storage.session
-  // - GET_CAPTURE above will then return the selection
-
   // Phase 9.5 will implement:
   // - Full page HTML capture via content script → stored in chrome.storage.session
   // - Auto-fill title/URL from page metadata

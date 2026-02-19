@@ -99,12 +99,12 @@
 - [x] Popup receives and displays content from background
 - [x] Save button triggers API call via background worker
 
-### 9.4 Context Menu — Selection Capture
-- [ ] Register context menu item "Save to Corpus" (`contexts: ["selection"]`)
-- [ ] Use `chrome.scripting.executeScript` to capture selection
-- [ ] Store selection in `chrome.storage.session`
-- [ ] Open popup with selected text pre-filled
-- [ ] POST to `/ingest/html` endpoint on save
+### 9.4 Context Menu — Selection Capture ✓
+- [x] Register context menu item "Save to Corpus" (`contexts: ["selection"]`)
+- [x] Use `chrome.scripting.executeScript` to capture selection
+- [x] Store selection in `chrome.storage.session`
+- [x] Open popup with selected text pre-filled
+- [x] POST to `/ingest/html` endpoint on save
 
 ### 9.5a Full Page — Content Capture
 - [ ] Add `tabs` permission to manifest.json
